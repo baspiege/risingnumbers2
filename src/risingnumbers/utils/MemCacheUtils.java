@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import risingnumbers.data.model.Game;
 
-
 /**
  * Mem cache utilities.
  *
@@ -23,7 +22,7 @@ public class MemCacheUtils
     *
     * @param aRequest Servlet Request
     */
-    public static Map<Long,Game> getServices(HttpServletRequest aRequest)
+    public static Map<Long,Game> getGames(HttpServletRequest aRequest)
     {
             MemcacheService memcache=MemcacheServiceFactory.getMemcacheService();
             return (Map<Long,Game>)memcache.get(GAMES);
@@ -33,13 +32,11 @@ public class MemCacheUtils
     * Set the games into cache.
     *
     * @param aRequest Servlet Request
-    * @param aServices Services
+    * @param aGames Games
     */
-    public static void setServices(HttpServletRequest aRequest, Map<Long,Game> aGames)
+    public static void setGames(HttpServletRequest aRequest, Map<Long,Game> aGames)
     {
             MemcacheService memcache=MemcacheServiceFactory.getMemcacheService();
             memcache.put(GAMES, aGames);
     }
-    
-
 }

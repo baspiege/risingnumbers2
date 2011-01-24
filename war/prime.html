@@ -11,11 +11,13 @@
 //<![CDATA[
 
 /*
-TODO
+TODO - Web
+* check if opponent ball collides with top...
+* start multi player game - wait for opponent - countdown...
+
+Minor
 * add move mouse up (like touch up)
-* check if opponent ball collides
-* start multi player game
-* send up number that is removed (value and x) - add variable - balls to opponent
+* hide pause/resume if online play
 
 Version 2
 - Key board controls - left, right, space bar to shoot.
@@ -87,6 +89,10 @@ function getCookie(name)
   return "";
 }
 
+function eraseCookie(name) {
+	setCookie(name,"",-1);
+}
+
 function Ball() {
   this.x=0;
   this.y=0;
@@ -127,11 +133,16 @@ var pause=false;
 var currentPositionX=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
 var redrawBoard=false;
 var redrawBallsInQueue=false;
+var playOnline=false;
+var multiPlayGameId=-1;
 
 // Board
 var balls=new Array();
 var ballsInQueue=new Array(); // Balls to shoot
-var ballsFromOpponent=new Array(); // Balls to shoot
+
+// Online play
+var ballsFromOpponent=new Array();
+var ballsToOpponent=new Array();
 
 // Current ball
 var currBall;
@@ -216,26 +227,34 @@ function createNewBall() {
 }
 
 function handleRequest(req) {
-  var ball=new Ball();
-  ball.number=parseInt(req.responseText);
-  ball.y=QUEUE_Y;
-  ball.x=200;
+ 
+  var results = req.responseText.split(",");
   
-  ballsFromOpponent.push(ball);
-  drawBallsFromOpponent();
+  if (results.length>0) {
+  
+    // TODO - Make sure id is only numbers and letters?
+    multiPlayGameId=results[0];
+  }
+  
+  if (results.length==3) {
+    var ball=new Ball();
+    ball.number=parseInt(results[1]);
+    ball.x=parseInt(results[2]);
+    ball.y=QUEUE_Y;
+    
+    ballsFromOpponent.push(ball);
+    drawBallsFromOpponent()
+  }
 }
 
 function incrementOpponent() {
-  // If multiple play
-  if (true) {
-    // Move up opponent numbers
-    for (var i=0;i<ballsFromOpponent.length;i++) {
-      var ball=ballsFromOpponent[i];
-      clearBall(ball);
-      ball.y-=Y_DELTA;
-    }
-    drawBallsFromOpponent();
+  // Move up opponent numbers
+  for (var i=0;i<ballsFromOpponent.length;i++) {
+    var ball=ballsFromOpponent[i];
+    clearBall(ball);
+    ball.y-=Y_DELTA;
   }
+  drawBallsFromOpponent();
 }
 
 function incrementBoard() {
@@ -274,8 +293,10 @@ function incrementBoard() {
     shooting=false;
     moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
   }
-  
-  incrementOpponent();
+
+  if (playOnline) {
+    incrementOpponent();
+  }
 
   if (redrawBoard) {
     drawBoard();
@@ -303,6 +324,14 @@ function detectCollision() {
 
       // If divides with no remainder, then divide target.
       if (balls[i].number%currBall.number==0) {
+        
+        // Send to opponent
+        if (playOnline) {
+            var ballTo=new Ball();
+            ballTo.x=currBall.x;
+            ballTo.number=currBall.number;
+            ballsToOpponent.push(ballTo);
+        }
         
         // Calculate new value
         var newValue=balls[i].number/currBall.number;
@@ -599,7 +628,18 @@ function init() {
 }
 
 function multiplayConnection() {
-    sendRequest('multiplay.jsp',handleRequest);
+
+    var postData=null;
+    
+    postData="gameId=" + multiPlayGameId;
+
+    // Get next ball to shoot
+    if (ballsToOpponent.length>0) {
+      var ballTo=ballsToOpponent.shift();
+      postData+="&number="+ballTo.number + "&x=" + ballTo.x;
+    }
+
+    sendRequest('multiplay.jsp',handleRequest,postData);
 }
 
 function newGame() {
@@ -622,9 +662,16 @@ function newGame() {
   balls=new Array();
   ballsInQueue=new Array();
   ballsFromOpponent=new Array();
+  ballsToOpponent=new Array();
   shooting=false;
   pause=false;
   updatePauseButton(PAUSE_LABEL);
+  
+  // TODO - Move HTML before JavaScript?
+  var playOnlineInput=document.getElementById("playOnline");
+  if (playOnlineInput) {
+    playOnline=playOnlineInput.checked;
+  }
 
   // Create board, new ball
   createBoard();
@@ -636,7 +683,10 @@ function newGame() {
 
   // Start animation.
   moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
-  multiplayInterval=setInterval(multiplayConnection, 2000);
+  if (playOnline) {
+    multiplayInterval=setInterval(multiplayConnection, 2000);
+    multiPlayGameId="-1";
+  }
 }
 
 function pauseContinue() {
@@ -678,7 +728,8 @@ function pauseContinue() {
     </p>
   </canvas>
   <div style="float:left;margin-top:1em;">
-    <button onclick="newGame();return false;">New Game</button>
+    <button onclick="newGame();return false;">New Game</button><br/><br/>
+    <input id="playOnline" type="checkbox">Play Online</input>
   </div>
   <div style="float:right;margin-top:1em;">
     <button id="pauseButton" onclick="pauseContinue();return false;">Pause</button>

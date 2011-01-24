@@ -25,12 +25,18 @@ public class Game implements Serializable {
     private static final long serialVersionUID = 1L;
     
     public static final int PENDING = 1;
-    public static final int USER_1_WON = 2;
-    public static final int USER_2_WON = 3;
+    public static final int IN_PLAY = 2;
+    public static final int USER_1_LOST_CONNECTION = 3;
+    public static final int USER_2_LOST_CONNECTION = 4;    
+    public static final int USER_1_WON = 5;
+    public static final int USER_2_WON = 6;
     
     @PrimaryKey 
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY) 
-    private Key key;
+    public Key key;
+    
+    @Persistent 
+    public String Id;
 
     @Persistent 
     public String userId1;
@@ -41,13 +47,10 @@ public class Game implements Serializable {
     @Persistent 
     public int status;    
 
-
-// TODO - Have ball be class.  number and x?
-
     @Persistent 
-    public List<Integer> ballsToUser1=new ArrayList<Integer>();   
+    public List<Ball> ballsToUser1=new ArrayList<Ball>();   
     
     @Persistent 
-    public List<Integer> ballsToUser2=new ArrayList<Integer>();
+    public List<Ball> ballsToUser2=new ArrayList<Ball>();
    
 }
