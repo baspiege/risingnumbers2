@@ -28,7 +28,7 @@ if (gameId!=null) {
 }
 //System.out.println("Game Id: " + gameId);        
 
-if (gameId==null || gameId.equals("-1")) {
+if (gameId==null || gameId.equals("NA")) {
 
     System.out.println("Pending game");        
     

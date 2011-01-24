@@ -134,7 +134,7 @@ var currentPositionX=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
 var redrawBoard=false;
 var redrawBallsInQueue=false;
 var playOnline=false;
-var multiPlayGameId=-1;
+var multiPlayGameId="NA";
 
 // Board
 var balls=new Array();
@@ -661,11 +661,15 @@ function newGame() {
   points=0;
   balls=new Array();
   ballsInQueue=new Array();
-  ballsFromOpponent=new Array();
-  ballsToOpponent=new Array();
   shooting=false;
   pause=false;
   updatePauseButton(PAUSE_LABEL);
+  
+  // Multi play
+  ballsFromOpponent=new Array();
+  ballsToOpponent=new Array();
+  multiPlayGameId="NA";
+  eraseCookie("JSESSIONID");
   
   // TODO - Move HTML before JavaScript?
   var playOnlineInput=document.getElementById("playOnline");
@@ -685,7 +689,6 @@ function newGame() {
   moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
   if (playOnline) {
     multiplayInterval=setInterval(multiplayConnection, 2000);
-    multiPlayGameId="-1";
   }
 }
 
