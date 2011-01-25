@@ -36,7 +36,7 @@ public class Game implements Serializable {
     public Key key;
     
     @Persistent 
-    public String Id;
+    public long Id;
 
     @Persistent 
     public String userId1;

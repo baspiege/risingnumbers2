@@ -134,7 +134,7 @@ var currentPositionX=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
 var redrawBoard=false;
 var redrawBallsInQueue=false;
 var playOnline=false;
-var multiPlayGameId="NA";
+var multiPlayUserId="";
 
 // Board
 var balls=new Array();
@@ -229,17 +229,18 @@ function createNewBall() {
 function handleRequest(req) {
  
   var results = req.responseText.split(",");
-  
-  if (results.length>0) {
+ 
+  // TODO - Remove
+  //if (results.length>0) {
   
     // TODO - Make sure id is only numbers and letters?
-    multiPlayGameId=results[0];
-  }
+    //multiPlayGameId=results[0];
+  //}
   
-  if (results.length==3) {
+  if (results.length==2) {
     var ball=new Ball();
-    ball.number=parseInt(results[1]);
-    ball.x=parseInt(results[2]);
+    ball.number=parseInt(results[0]);
+    ball.x=parseInt(results[1]);
     ball.y=QUEUE_Y;
     
     ballsFromOpponent.push(ball);
@@ -631,7 +632,7 @@ function multiplayConnection() {
 
     var postData=null;
     
-    postData="gameId=" + multiPlayGameId;
+    postData="userId=" + multiPlayUserId;
 
     // Get next ball to shoot
     if (ballsToOpponent.length>0) {
@@ -668,8 +669,10 @@ function newGame() {
   // Multi play
   ballsFromOpponent=new Array();
   ballsToOpponent=new Array();
-  multiPlayGameId="NA";
-  eraseCookie("JSESSIONID");
+  multiPlayUserId=createRandomExclusive(1000000000000000);
+  
+  // TODO - Remove
+  //eraseCookie("JSESSIONID");
   
   // TODO - Move HTML before JavaScript?
   var playOnlineInput=document.getElementById("playOnline");
