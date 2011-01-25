@@ -5,6 +5,7 @@ import com.google.appengine.api.datastore.Key;
 import java.io.Serializable;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.jdo.annotations.IdGeneratorStrategy; 
@@ -46,6 +47,12 @@ public class Game implements Serializable {
 
     @Persistent 
     public int status;    
+    
+    @Persistent 
+    public Date lastTimeCheckedAccessedByUser1;    
+    
+    @Persistent 
+    public Date lastTimeCheckedAccessedByUser2;
 
     @Persistent 
     public List<Ball> ballsToUser1=new ArrayList<Ball>();   
