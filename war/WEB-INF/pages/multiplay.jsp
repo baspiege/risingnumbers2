@@ -17,9 +17,18 @@ response.setHeader("Cache-Control","no-cache");
 response.setHeader("Pragma","no-cache");
 response.setDateHeader ("Expires", -1);
 
+/** Server
+
+Add timestamp to game...
+
+Check if pending game is old?  If is remove and try next...
+
+Get game status from web.  If over, signal to other player.
+
+*/
+
 MemcacheService memcache=MemcacheServiceFactory.getMemcacheService();
 
-// See if in game.  Else, see if pending.  Else, create new game.
 String userId=request.getParameter("userId");
 Long gameId=null;
 
@@ -62,12 +71,12 @@ if (gameId==null) {
         pendingGames.add(game);
         memcache.put("pendingGames",pendingGames);
     } else {
-        
-        // Start new game (check if pending game is old?)
-     
+         
         // Get first 
         game=(Game)pendingGames.remove(0);
         
+        // TODO - Check if pending game is old?  If is remove and try next...
+    
         // Set as user 2 and put into play
         game.userId2=userId;
         game.status=Game.IN_PLAY;
@@ -75,9 +84,8 @@ if (gameId==null) {
         memcache.put("pendingGames",pendingGames);
     }
     
-    // Set in cache for quick lookup
-    memcache.put("gameId_" + game.Id, game);        
-    
+    // Set in cache
+    memcache.put("gameId_" + game.Id, game);    
     memcache.put("userId_"+userId,game.Id);
 
 } else {
@@ -95,6 +103,9 @@ if (gameId==null) {
     
     // If pending, return
     if (game.status==Game.PENDING) {
+    
+        // TODO - Update timestamp.
+    
         System.out.println("Existing game pending!");        
     }
  
