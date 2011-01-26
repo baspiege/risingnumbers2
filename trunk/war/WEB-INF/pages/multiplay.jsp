@@ -22,9 +22,9 @@ response.setDateHeader ("Expires", -1);
 
 Check if pending game is old?  If is remove and try next...
 
-Get game status from web.  If over, signal to other player.
+When start, make sure get another request, and then send countdown...
 
-If lost connection, write in board...
+Get game status from web.  If over, signal to other player.
 
 */
 
