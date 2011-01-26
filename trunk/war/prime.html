@@ -122,6 +122,14 @@ var RESUME_LABEL="Resume";
 var QUEUE_Y_BOUND=QUEUE_Y-(BALL_RADIUS*2)-1;
 var QUEUE_X_BOUND=121;
 
+// Multi play game status
+var PENDING=1;
+var IN_PLAY=2;
+var USER_1_LOST_CONNECTION=3;
+var USER_2_LOST_CONNECTION=4;
+var USER_1_WON=5;
+var USER_2_WON=6;
+
 // Game variables
 var ctx;
 var moveInterval; // Animation
@@ -134,7 +142,10 @@ var currentPositionX=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
 var redrawBoard=false;
 var redrawBallsInQueue=false;
 var playOnline=false;
+
+// Multiplay game variables
 var multiPlayUserId="";
+var multiPlayGameStatus=0;
 
 // Board
 var balls=new Array();
@@ -230,17 +241,21 @@ function handleRequest(req) {
  
   var results = req.responseText.split(",");
  
-  // TODO - Remove
-  //if (results.length>0) {
+  if (results.length>0) {
+     multiPlayGameStatus=parseInt(results[0]);
+     
+     if (multiPlayGameStatus==USER_1_LOST_CONNECTION) {
+        updateMultiGameStatus("User 1 lost connection");
+     }
+     if (multiPlayGameStatus==USER_2_LOST_CONNECTION) {
+        updateMultiGameStatus("User 2 lost connection");
+     }     
+  }
   
-    // TODO - Make sure id is only numbers and letters?
-    //multiPlayGameId=results[0];
-  //}
-  
-  if (results.length==2) {
+  if (results.length==3) {
     var ball=new Ball();
-    ball.number=parseInt(results[0]);
-    ball.x=parseInt(results[1]);
+    ball.number=parseInt(results[1]);
+    ball.x=parseInt(results[2]);
     ball.y=QUEUE_Y;
     
     ballsFromOpponent.push(ball);
@@ -549,6 +564,10 @@ function updatePauseButton(label) {
   document.getElementById("pauseButton").innerHTML=label;
 }
 
+function updateMultiGameStatus(status) {
+  document.getElementById("multiGameStatus").innerHTML=status;
+}
+
 ///////////////////
 // Interaction
 ///////////////////
@@ -735,7 +754,7 @@ function pauseContinue() {
   </canvas>
   <div style="float:left;margin-top:1em;">
     <button onclick="newGame();return false;">New Game</button><br/><br/>
-    <input id="playOnline" type="checkbox">Play Online</input>
+    <input id="playOnline" type="checkbox">Play Online</input><span id="multiGameStatus"></span>
   </div>
   <div style="float:right;margin-top:1em;">
     <button id="pauseButton" onclick="pauseContinue();return false;">Pause</button>
