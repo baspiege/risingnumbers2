@@ -1,0 +1,813 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- Copyright 2010 Brian Spiegel -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+<title>Rising Numbers!</title>
+</head>
+<body>
+<script type="text/javascript">
+//<![CDATA[
+
+/*
+TODO - Web
+* start multi player game (showing pending)
+* when self game over, send to other.
+* when other game over, stop this game and say game won!
+
+* when starting, have countdown 3... 2.... 1...
+
+* check if opponent ball collides with top...
+
+* if lost connection, write in board (remove)
+
+Minor
+* add move mouse up (like touch up)
+* hide pause/resume if online play
+
+Version 2
+- Key board controls - left, right, space bar to shoot.
+- Different starting patterns
+*/
+
+var XMLHttpFactories = [
+	function () {return new XMLHttpRequest()},
+	function () {return new ActiveXObject("Msxml2.XMLHTTP")},
+	function () {return new ActiveXObject("Msxml3.XMLHTTP")},
+	function () {return new ActiveXObject("Microsoft.XMLHTTP")}
+];
+
+function createXMLHTTPObject() {
+	var xmlhttp = false;
+	for (var i=0;i<XMLHttpFactories.length;i++) {
+		try {
+			xmlhttp = XMLHttpFactories[i]();
+		}
+		catch (e) {
+			continue;
+		}
+		break;
+	}
+	return xmlhttp;
+}
+
+var xmlHttpRequester=createXMLHTTPObject();
+
+function sendRequest(url,callback,postData) {
+	var req = xmlHttpRequester;
+	if (!req) return;
+	var method = (postData) ? "POST" : "GET";
+	req.open(method,url,true);
+	req.setRequestHeader('User-Agent','XMLHTTP/1.0');
+	if (postData)
+		req.setRequestHeader('Content-type','application/x-www-form-urlencoded');
+	req.onreadystatechange = function () {
+		if (req.readyState != 4) return;
+		if (req.status != 200 && req.status != 304) {
+//			alert('HTTP error ' + req.status);
+			return;
+		}
+		callback(req);
+	}
+	if (req.readyState == 4) return;
+	req.send(postData);
+}
+
+function setCookie(name,value,daysToExpire) {
+  var date=new Date();
+  date.setDate(date.getDate()+daysToExpire);
+  document.cookie=name + "=" +escape(value) + ((daysToExpire==null) ? "" : ";expires="+date.toUTCString());
+}
+
+function getCookie(name)
+{
+  if (document.cookie.length>0) {
+    var start=document.cookie.indexOf(name+"=");
+    if (start!=-1) {
+      start+=name.length+1;
+      var end=document.cookie.indexOf(";",start);
+      if (end==-1) {
+        end=document.cookie.length;
+      }
+      return unescape(document.cookie.substring(start,end));
+    }
+  }
+  return "";
+}
+
+function eraseCookie(name) {
+	setCookie(name,"",-1);
+}
+
+function Ball() {
+  this.x=0;
+  this.y=0;
+  this.number=0;
+}
+
+// Constants
+var BALLS_IN_ROW=8;
+var STARTING_BALL_MAX=25;
+var NEW_BALL_MAX=25;
+var BALLS_IN_QUEUE=3;
+var ANIMATION_MILLIS=20;
+var BALL_SPACING=36;
+var MARGIN_LEFT=20;
+var MARGIN_RIGHT=280;
+var MARGIN_TOP=20;
+var QUEUE_Y=280;
+var Y_DELTA=1;
+var BALL_RADIUS=15;
+var BALL_DISTANCE=BALL_RADIUS*2;
+var BALL_RADIUS_CLEAR=BALL_RADIUS+1; // 1 more than radius to prevent shadow.
+var HIGH_SCORE_COOKIE="highScore";
+var PAUSE_LABEL="Pause";
+var RESUME_LABEL="Resume";
+
+// Move queue outside box?
+var QUEUE_Y_BOUND=QUEUE_Y-(BALL_RADIUS*2)-1;
+var QUEUE_X_BOUND=121;
+
+// Multi play game status
+var PENDING=1;
+var IN_PLAY=2;
+var USER_1_LOST_CONNECTION=3;
+var USER_2_LOST_CONNECTION=4;
+var USER_1_WON=5;
+var USER_2_WON=6;
+var STARTING=7;
+
+// Game variables
+var ctx;
+var moveInterval; // Animation
+var multiplayInterval;
+var isGameOver=false;
+var isGameWon=false;
+var points=0;
+var pause=false;
+var currentPositionX=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
+var redrawBoard=false;
+var redrawBallsInQueue=false;
+var playOnline=false;
+
+// Multiplay game variables
+var multiPlayUserId="";
+var multiPlayGameStatus=0;
+
+// Board
+var balls=new Array();
+var ballsInQueue=new Array(); // Balls to shoot
+
+// Online play
+var ballsFromOpponent=new Array();
+var ballsToOpponent=new Array();
+
+// Current ball
+var currBall;
+var shooting=false; // Is shooting?
+
+///////////////////
+// Utilities
+///////////////////
+
+function createRandomExclusive(max) {
+  return Math.floor(Math.random()*max);
+}
+
+///////////////////
+// Board
+///////////////////
+
+function getHighScore() {
+  var highScore=getCookie(HIGH_SCORE_COOKIE);
+  if (highScore=="") {
+    return 0;
+  } else {
+    return parseInt(highScore);
+  }
+}
+
+function createBoard() {
+  var x=MARGIN_LEFT;
+  for (var i=0;i<BALLS_IN_ROW;i++) {
+    var ball=new Ball();
+    ball.x=x;
+    ball.y=MARGIN_TOP;
+    ball.number=createRandomExclusive(STARTING_BALL_MAX)+2;
+    balls.push(ball);
+    x+=BALL_SPACING;
+  }
+
+  x=MARGIN_LEFT;
+  for (var i=0;i<BALLS_IN_ROW;i++) {
+    var ball=new Ball();
+    ball.x=x;
+    ball.y=MARGIN_TOP+(BALL_RADIUS*2); // Next row
+    ball.number=createRandomExclusive(STARTING_BALL_MAX)+2;
+    balls.push(ball);
+    x+=BALL_SPACING;
+  }
+
+  x=MARGIN_LEFT;
+  var y=QUEUE_Y;
+
+  for (var i=0;i<BALLS_IN_QUEUE;i++) {
+    var ball=new Ball();
+    ball.x=x;
+    ball.y=y;
+    ball.number=createRandomExclusive(NEW_BALL_MAX)+2;
+    ballsInQueue.push(ball);
+    x+=BALL_SPACING;
+  }
+}
+
+function createNewBall() {
+
+  // Get latest
+  currBall=ballsInQueue.pop();
+  currBall.x+=BALL_SPACING; // Move to end of line.
+
+  // Create new ball and add to back.
+  var ball=new Ball();
+  ball.number=createRandomExclusive(NEW_BALL_MAX)+2;
+  ball.y=QUEUE_Y;
+  ballsInQueue.splice(0,0,ball);
+
+  // Move up rest of queue
+  var x=MARGIN_LEFT;
+  for (var i=0;i<ballsInQueue.length;i++) {
+    var ball=ballsInQueue[i];
+    ball.x=x;
+    x+=BALL_SPACING;
+  }
+  
+  redrawBallsInQueue=true;
+}
+
+function handleRequest(req) {
+ 
+  var results = req.responseText.split(",");
+ 
+  if (results.length>0) {
+     //multiPlayGameStatus=parseInt(results[0]);
+     var status=parseInt(results[0]);
+     
+     if (status==USER_1_LOST_CONNECTION) {
+        updateMultiGameStatus("User 1 lost connection");
+     }
+     if (status==USER_2_LOST_CONNECTION) {
+        updateMultiGameStatus("User 2 lost connection");
+     }     
+     
+     if (status==IN_PLAY && multiPlayGameStatus==PENDING) {
+        multiPlayGameStatus=STARTING;
+     } else {
+        multiPlayGameStatus=status;
+     }
+  }
+  
+  if (results.length==3) {
+    var ball=new Ball();
+    ball.number=parseInt(results[1]);
+    ball.x=parseInt(results[2]);
+    ball.y=QUEUE_Y;
+    
+    ballsFromOpponent.push(ball);
+    drawBallsFromOpponent()
+  }
+}
+
+function incrementOpponent() {
+  // Move up opponent numbers
+  for (var i=0;i<ballsFromOpponent.length;i++) {
+    var ball=ballsFromOpponent[i];
+    clearBall(ball);
+    ball.y-=Y_DELTA;
+  }
+  drawBallsFromOpponent();
+}
+
+function incrementBoard() {
+
+  if (isGameOver) {
+    drawBoard();
+ 
+    clearInterval(moveInterval);
+    clearInterval(multiplayInterval);
+    if (isGameWon) {
+      drawGameWon();
+    } else {
+      drawGameOver();
+    }
+
+    var highScore=getHighScore();
+    if (points>highScore) {
+      setCookie(HIGH_SCORE_COOKIE, points, 365);
+      updateHighScoreDisplay();
+    }
+
+    return;
+  }
+  
+  if (playOnline && multiPlayGameStatus==PENDING) {
+    ctx.clearRect(0,0,300,300);
+    drawWaitingForOpponent();
+    return;
+  }
+  
+  if (playOnline && multiPlayGameStatus==STARTING) {
+    drawStarting();
+    multiPlayGameStatus=IN_PLAY;
+    
+    return;
+  }
+  
+  if (!shooting) {
+    detectCollision();
+  }
+  // If shooting, stop animation, continue until ball hits, then restart
+  // animation.
+  else {
+    clearInterval(moveInterval);
+    var collision=false;
+    while (!collision) {
+      collision=detectCollision();
+    }
+    shooting=false;
+    moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
+  }
+
+  if (playOnline) {
+    incrementOpponent();
+  }
+
+  if (redrawBoard) {
+    drawBoard();
+    redrawBoard=false;
+  } else if (redrawBallsInQueue) {  
+    drawBallsInQueue();
+    redrawBallsInQueue=false;
+  }
+}
+
+function detectBallCollision(ball_1, ball_2) {
+  var dY=ball_1.y-ball_2.y;
+  var dX=ball_1.x-ball_2.x;
+  return Math.sqrt((dY*dY)+(dX*dX))<=BALL_DISTANCE;
+}
+
+function detectCollision() {
+
+  var collision=false;
+
+  // Detect collision with other balls
+  for (var i=0;i<balls.length;i++) {
+    if (detectBallCollision(currBall,balls[i])) {
+      collision=true;
+
+      // If divides with no remainder, then divide target.
+      if (balls[i].number%currBall.number==0) {
+        
+        // Send to opponent
+        if (playOnline) {
+            var ballTo=new Ball();
+            ballTo.x=currBall.x;
+            ballTo.number=currBall.number;
+            ballsToOpponent.push(ballTo);
+        }
+        
+        // Calculate new value
+        var newValue=balls[i].number/currBall.number;
+
+        // Update points
+        points+=balls[i].number-newValue;
+
+        // Update ball
+        balls[i].number=newValue;
+
+        // If target is now 1, remove it as well.
+        if (balls[i].number==1) {
+          balls.splice(i,1);
+
+          // Trigger redraw
+          redrawBoard=true;
+          
+          // Add 1 to points
+          points+=1;
+
+          // If no balls left on board, game won!
+          if (balls.length<1) {
+            isGameOver=true;
+            isGameWon=true;
+          }
+        }
+        else {
+          // Clear current and redraw ball that was hit
+          clearBall(currBall);
+          drawBall(balls[i]);
+        }
+
+        updatePointsDisplay();
+
+        createNewBall();
+      } else {
+        // Add to current ball.
+        currBall.number+=balls[i].number;
+        drawBall(currBall);
+
+        // Add to board.
+        balls.push( currBall );
+
+        // If over 99 or at bottom, game over!
+        if (currBall.number>99 || currBall.y>260) {
+            isGameOver=true;
+            isGameWon=false;
+        } else {
+          createNewBall();
+          drawBall(currBall);
+        }
+      }
+
+      break;
+    }
+  }
+
+  // Check if collision with top
+  if (!collision) {
+    if (currBall.y<=MARGIN_TOP) {
+      collision=true;
+      balls.push( currBall );
+      createNewBall();
+      drawBall(currBall);
+    } else {
+      // Redraw draw if clearing over queue
+      if (currBall.y>QUEUE_Y_BOUND && currBall.x<QUEUE_X_BOUND) {
+        redrawBallsInQueue=true;
+      }
+    
+      clearBall(currBall);
+      currBall.y-=Y_DELTA;
+      currBall.x=currentPositionX;
+      drawBall(currBall);
+    }
+  }
+ 
+  return collision;
+}
+
+///////////////////
+// Draw
+///////////////////
+
+function clearBall(ball) {
+  ctx.beginPath();
+  ctx.fillStyle = "#ffffff";
+  ctx.arc(ball.x, ball.y, BALL_RADIUS_CLEAR, 0, Math.PI*2, true);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawOpponentBall(ball) {
+
+  // Circle
+  ctx.beginPath();
+  ctx.fillStyle = "#ff0000";
+  ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI*2, true);
+  ctx.closePath();
+  ctx.fill();
+
+  // Color of number
+  ctx.fillStyle = "#ffffff";
+
+  // Adjust position based on number of digits
+  if (ball.number>99) {
+    ctx.font = "bold 18px serif";
+    ctx.fillText(ball.number,ball.x-14,ball.y+5);
+  } else if (ball.number>9) {
+    ctx.font = "bold 24px serif";
+    ctx.fillText(ball.number,ball.x-12,ball.y+7);
+  } else {
+    ctx.font = "bold 24px serif";
+    ctx.fillText(ball.number,ball.x-6,ball.y+7);
+  }
+}
+
+function drawBall(ball) {
+
+  // Circle
+  ctx.beginPath();
+  ctx.fillStyle = "#0000ff";
+  ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI*2, true);
+  ctx.closePath();
+  ctx.fill();
+
+  // Color of number
+  ctx.fillStyle = "#ffffff";
+
+  // Adjust position based on number of digits
+  if (ball.number>99) {
+    ctx.font = "bold 18px serif";
+    ctx.fillText(ball.number,ball.x-14,ball.y+5);
+  } else if (ball.number>9) {
+    ctx.font = "bold 24px serif";
+    ctx.fillText(ball.number,ball.x-12,ball.y+7);
+  } else {
+    ctx.font = "bold 24px serif";
+    ctx.fillText(ball.number,ball.x-6,ball.y+7);
+  }
+}
+
+function drawBallsOnBoard() {
+  for (var i=0;i<balls.length;i++) {
+    drawBall(balls[i]);
+  }
+}
+
+function drawBallsInQueue() {
+  for (var i=0;i<ballsInQueue.length;i++) {
+    drawBall(ballsInQueue[i]);
+  }
+}
+
+function drawBallsFromOpponent() {
+  for (var i=0;i<ballsFromOpponent.length;i++) {
+    drawOpponentBall(ballsFromOpponent[i]);
+  }
+}
+
+function drawBoard() {
+    ctx.clearRect(0,0,300,300);
+    drawBallsOnBoard();  
+    drawBall(currBall);
+    drawBallsInQueue();
+    drawBallsFromOpponent();
+}
+
+function drawText(text) {
+
+  // Text
+  ctx.font = "bold 24px serif";
+  ctx.fillStyle = "#0000ff";
+  ctx.fillText(text,110,110);
+}
+
+function drawGameOver() {
+
+  // Back ground
+  ctx.fillStyle = "#f0f0f0";
+  ctx.fillRect(95, 80, 170, 50);
+
+  // Text
+  ctx.font = "bold 24px serif";
+  ctx.fillStyle = "#ff0000";
+  ctx.fillText("Game over!",110,110);
+}
+
+function drawGameWon() {
+
+  // Back ground
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(95, 80, 170, 50);
+
+  // Text
+  ctx.font = "bold 24px serif";
+  ctx.fillStyle = "#00ff00";
+  ctx.fillText("Game won!",110,110);
+}
+
+function drawPaused() {
+  drawText("Paused!");
+}
+
+function drawStarting() {
+  drawText("Starting!");
+}
+
+function drawWaitingForOpponent() {
+  // Text
+  ctx.font = "bold 24px serif";
+  ctx.fillStyle = "#0000ff";
+  ctx.fillText("Waiting for opponent...",40,110);
+}
+
+function updatePointsDisplay() {
+  document.getElementById("points").innerHTML=points;
+}
+
+function debug(text) {
+  document.getElementById("debug").innerHTML=text;
+}
+
+function updateHighScoreDisplay() {
+  document.getElementById("highScore").innerHTML=getHighScore();
+}
+
+function updatePauseButton(label) {
+  document.getElementById("pauseButton").innerHTML=label;
+}
+
+function updateMultiGameStatus(status) {
+  document.getElementById("multiGameStatus").innerHTML=status;
+}
+
+///////////////////
+// Interaction
+///////////////////
+
+function touchMove (ev) {
+
+  var x;
+  if (ev.touches && ev.touches.length) { // iPhone
+    x = ev.touches[0].clientX;
+  } else { // All others
+    x = e.clientX;
+  }
+  
+  if (x<MARGIN_LEFT) {
+    x=MARGIN_LEFT;
+  } else if (x>MARGIN_RIGHT) {
+    x=MARGIN_RIGHT;
+  }
+
+  currentPositionX=x;
+}
+
+function mouseMove (ev) {
+  var x;
+
+  // Get the mouse position.
+  if (ev.layerX || ev.layerX == 0) { // Firefox
+    x = ev.layerX;
+  } else if (ev.offsetX || ev.offsetX == 0) { // Opera
+    x = ev.offsetX;
+  }
+
+  if (x<MARGIN_LEFT) {
+    x=MARGIN_LEFT;
+  } else if (x>MARGIN_RIGHT) {
+    x=MARGIN_RIGHT;
+  }
+
+  currentPositionX=x;
+}
+
+function shootBall() {
+  shooting=true;
+  return false;
+}
+
+function keyDownEscape(ev) {
+  if (ev.keyCode == '27') {
+    pauseContinue();
+  }
+}
+
+///////////////////
+// Set-up
+///////////////////
+
+function init() {
+
+  updateHighScoreDisplay();
+
+  var canvas=document.getElementById("canvas");
+
+  // If not supported, stop processing.
+  if (!canvas.getContext) {
+    return;
+  }
+
+  // Set listeners
+  document.addEventListener('mousemove', mouseMove, false);
+  document.addEventListener('click', shootBall, true); // Capturing so pause button doesn't cause shoot
+  document.addEventListener('keydown', keyDownEscape, false);
+  document.addEventListener('touchmove', touchMove, false);
+
+  // Set context
+  ctx = canvas.getContext("2d");
+
+  newGame();
+}
+
+function multiplayConnection() {
+
+    var postData=null;
+    
+    postData="userId=" + multiPlayUserId;
+
+    // Get next ball to shoot
+    if (ballsToOpponent.length>0) {
+      var ballTo=ballsToOpponent.shift();
+      postData+="&number="+ballTo.number + "&x=" + ballTo.x;
+    }
+
+    sendRequest('multiplay.jsp',handleRequest,postData);
+}
+
+function newGame() {
+
+  // If not supported, stop processing.
+  if (!ctx) {
+    return;
+  }
+
+  // Stop animation
+  if (moveInterval) {
+    clearInterval(moveInterval);
+    clearInterval(multiplayInterval);
+  }
+
+  // Reset variables
+  isGameOver=false;
+  isGameWon=false;
+  points=0;
+  balls=new Array();
+  ballsInQueue=new Array();
+  shooting=false;
+  pause=false;
+  updatePauseButton(PAUSE_LABEL);
+  
+  // Multi play
+  ballsFromOpponent=new Array();
+  ballsToOpponent=new Array();
+  multiPlayUserId=createRandomExclusive(1000000000000000);
+  
+  // TODO - Remove
+  //eraseCookie("JSESSIONID");
+  
+  // TODO - Move HTML before JavaScript?
+  var playOnlineInput=document.getElementById("playOnline");
+  if (playOnlineInput) {
+    playOnline=playOnlineInput.checked;
+  }
+
+  // Create board, new ball
+  createBoard();
+  createNewBall();
+
+  // Draw board
+  drawBoard();
+  updatePointsDisplay();
+
+  // Start animation.
+  moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
+  if (playOnline) {
+    multiplayInterval=setInterval(multiplayConnection, 2000);
+  }
+}
+
+function pauseContinue() {
+
+  // If not supported, stop processing.
+  if (!ctx) {
+    return;
+  }
+
+  // Pause or resume
+  if (!pause) {
+    clearInterval(moveInterval);
+    // Clear board and draw paused.
+    ctx.clearRect(0,0,300,300);
+    drawPaused();
+    // Button label
+    updatePauseButton(RESUME_LABEL);
+    pause=true;
+  } else {
+    shooting=false;
+    moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
+    // Redraw
+    drawBoard();
+    // Button label
+    updatePauseButton(PAUSE_LABEL);
+    pause=false;
+  }
+}
+//]]>
+</script>
+<div style="width:300px">
+  <p>Rising number divides!</p>
+  <div style="float:left">Points: <span id="points">0</span></div>
+  <div style="float:right">High Score: <span id="highScore">0</span></div>
+  <canvas style="border:1px #000000 solid;" id="canvas" width="300" height="300">
+    <p style="color:#ff0000;">
+    This games requires a browser that supports the HTML 5 canvas tag, such
+    as the latest versions of Firefox, Chrome, Opera, and Safari. IE users - IE 9 will support canvas!
+    </p>
+  </canvas>
+  <div style="float:left;margin-top:1em;">
+    <button onclick="newGame();return false;">New Game</button><br/><br/>
+    <input id="playOnline" type="checkbox">Play Online</input><span id="multiGameStatus"></span>
+  </div>
+  <div style="float:right;margin-top:1em;">
+    <button id="pauseButton" onclick="pauseContinue();return false;">Pause</button>
+  </div>
+  <!--<div id="debug"></div>-->
+</div>
+<script type="text/javascript">
+//<![CDATA[
+init();
+//]]>
+</script>
+</body>
+</html>
