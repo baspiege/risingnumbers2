@@ -12,19 +12,15 @@
 
 /*
 TODO - Web
-* start multi player game (showing pending)
 * when self game over, send to other.
 * when other game over, stop this game and say game won!
-
-* when starting, have countdown 3... 2.... 1...
-
-* check if opponent ball collides with top...
-
-* if lost connection, write in board (remove)
+* check if opponent ball collides with top
 
 Minor
+* when starting, have countdown 3, 2, 1
 * add move mouse up (like touch up)
 * hide pause/resume if online play
+* if lost connection, write in board (remove)
 
 Version 2
 - Key board controls - left, right, space bar to shoot.
@@ -112,6 +108,8 @@ var STARTING_BALL_MAX=25;
 var NEW_BALL_MAX=25;
 var BALLS_IN_QUEUE=3;
 var ANIMATION_MILLIS=20;
+var BOARD_X=300;
+var BOARD_Y=300;
 var BALL_SPACING=36;
 var MARGIN_LEFT=20;
 var MARGIN_RIGHT=280;
@@ -122,6 +120,8 @@ var BALL_RADIUS=15;
 var BALL_DISTANCE=BALL_RADIUS*2;
 var BALL_RADIUS_CLEAR=BALL_RADIUS+1; // 1 more than radius to prevent shadow.
 var HIGH_SCORE_COOKIE="highScore";
+
+// Labels
 var PAUSE_LABEL="Pause";
 var RESUME_LABEL="Resume";
 
@@ -137,6 +137,9 @@ var USER_2_LOST_CONNECTION=4;
 var USER_1_WON=5;
 var USER_2_WON=6;
 var STARTING=7;
+
+// Multiplay constants
+var CONNECTION_MILLIS=2000;
 
 // Game variables
 var ctx;
@@ -260,8 +263,14 @@ function handleRequest(req) {
         updateMultiGameStatus("User 2 lost connection");
      }     
      
-     if (status==IN_PLAY && multiPlayGameStatus==PENDING) {
-        multiPlayGameStatus=STARTING;
+     if (status==IN_PLAY && multiPlayGameStatus!=IN_PLAY) {
+
+        // Draw board and start animation
+        clearBoard();
+        drawBoard();
+        moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);  
+        multiPlayGameStatus=IN_PLAY;
+          
      } else {
         multiPlayGameStatus=status;
      }
@@ -310,17 +319,21 @@ function incrementBoard() {
     return;
   }
   
-  if (playOnline && multiPlayGameStatus==PENDING) {
-    ctx.clearRect(0,0,300,300);
-    drawWaitingForOpponent();
-    return;
-  }
-  
-  if (playOnline && multiPlayGameStatus==STARTING) {
-    drawStarting();
-    multiPlayGameStatus=IN_PLAY;
-    
-    return;
+  if (playOnline) {
+    if (multiPlayGameStatus==PENDING) {
+      //debug("pending");
+      clearBoard();
+      drawWaitingForOpponent();
+      return;
+    } else if (multiPlayGameStatus==STARTING) {
+      //debug("starting");
+      // Draw board and start animation
+      clearBoard();
+      drawBoard();
+      moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);  
+      multiPlayGameStatus=IN_PLAY;
+      return;
+    }
   }
   
   if (!shooting) {
@@ -460,6 +473,10 @@ function detectCollision() {
 // Draw
 ///////////////////
 
+function clearBoard() {
+    ctx.clearRect(0,0,BOARD_X,BOARD_Y);
+}
+
 function clearBall(ball) {
   ctx.beginPath();
   ctx.fillStyle = "#ffffff";
@@ -537,7 +554,7 @@ function drawBallsFromOpponent() {
 }
 
 function drawBoard() {
-    ctx.clearRect(0,0,300,300);
+    clearBoard();
     drawBallsOnBoard();  
     drawBall(currBall);
     drawBallsInQueue();
@@ -715,6 +732,10 @@ function newGame() {
   // Stop animation
   if (moveInterval) {
     clearInterval(moveInterval);
+  }
+  
+  // Stop connection
+  if (multiplayInterval) {
     clearInterval(multiplayInterval);
   }
 
@@ -732,6 +753,7 @@ function newGame() {
   ballsFromOpponent=new Array();
   ballsToOpponent=new Array();
   multiPlayUserId=createRandomExclusive(1000000000000000);
+  multiPlayGameStatus=PENDING;
   
   // TODO - Remove
   //eraseCookie("JSESSIONID");
@@ -741,19 +763,23 @@ function newGame() {
   if (playOnlineInput) {
     playOnline=playOnlineInput.checked;
   }
-
+  
   // Create board, new ball
   createBoard();
   createNewBall();
 
-  // Draw board
-  drawBoard();
+  // Update points
   updatePointsDisplay();
-
-  // Start animation.
-  moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
+  
   if (playOnline) {
-    multiplayInterval=setInterval(multiplayConnection, 2000);
+    // Wait for opponent
+    clearBoard();
+    drawWaitingForOpponent();    
+    multiplayInterval=setInterval(multiplayConnection, CONNECTION_MILLIS);
+  } else {
+    // Draw board and start animation
+    drawBoard();
+    moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
   }
 }
 
@@ -768,7 +794,7 @@ function pauseContinue() {
   if (!pause) {
     clearInterval(moveInterval);
     // Clear board and draw paused.
-    ctx.clearRect(0,0,300,300);
+    clearBoard();
     drawPaused();
     // Button label
     updatePauseButton(RESUME_LABEL);
@@ -802,7 +828,7 @@ function pauseContinue() {
   <div style="float:right;margin-top:1em;">
     <button id="pauseButton" onclick="pauseContinue();return false;">Pause</button>
   </div>
-  <!--<div id="debug"></div>-->
+  <div id="debug"></div>
 </div>
 <script type="text/javascript">
 //<![CDATA[
