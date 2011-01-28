@@ -13,6 +13,9 @@
 <%@ page import="com.google.appengine.api.memcache.MemcacheService" %>
 <%@ page import="com.google.appengine.api.memcache.MemcacheServiceFactory" %>
 
+
+<%! public static int CONNECTION_OLD_MILLIS=10000; %>
+
 <%
 response.setHeader("Cache-Control","no-cache");
 response.setHeader("Pragma","no-cache");
@@ -20,9 +23,8 @@ response.setDateHeader ("Expires", -1);
 
 /** Server
 
-Check if pending game is old?  If is remove and try next...
-
 Get game status from game.  If over, signal to other player.
+User mem cache increment!!!
 
 */
 
@@ -57,7 +59,33 @@ if (gameId==null) {
     
     // If no pending games, add pending game.
     Game game=null;
-    if (pendingGames.isEmpty()){
+    if (!pendingGames.isEmpty()){
+        while (pendingGames.size()>0) {
+            // Get first 
+            game=(Game)pendingGames.remove(0);
+        
+            if (new Date().getTime() - game.lastTimeCheckedAccessedByUser1.getTime() > CONNECTION_OLD_MILLIS ) {
+                System.out.println("Removing old game Id: " + game.Id);               
+                game=null;
+   
+                // Update
+                memcache.put("pendingGames",pendingGames);            
+            } else {
+                // Set as user 2 and put into play
+                game.userId2=userId;
+                game.lastTimeCheckedAccessedByUser2=new Date();
+                game.status=Game.IN_PLAY;
+                
+                memcache.put("pendingGames",pendingGames);
+                break;
+            }
+            
+            // Get latest
+            pendingGames=(List<Game>)memcache.get("pendingGames");
+        }
+    }
+    
+    if (game==null) {
         game=new Game();
         
         // TODO - User mem cache increment!!!
@@ -70,21 +98,8 @@ if (gameId==null) {
         
         pendingGames.add(game);
         memcache.put("pendingGames",pendingGames);
-    } else {
-         
-        // Get first 
-        game=(Game)pendingGames.remove(0);
-        
-        // TODO - Check if pending game is old?  If is remove and try next...
-    
-        // Set as user 2 and put into play (start status?)
-        game.userId2=userId;
-        game.lastTimeCheckedAccessedByUser2=new Date();
-        game.status=Game.IN_PLAY;
-        
-        memcache.put("pendingGames",pendingGames);
-    }
-    
+    }    
+
     // Set in cache
     memcache.put("gameId_" + game.Id, game);    
     memcache.put("userId_"+userId,game.Id);
@@ -114,12 +129,8 @@ if (gameId==null) {
     }
     
     // If pending, return
-    if (game.status==Game.PENDING) {
-    
-        // TODO - Update timestamp.
-    
+    if (game.status==Game.PENDING) {    
         out.write( game.status + ",");
-    
         System.out.println("Existing game pending");        
     }
  
@@ -127,7 +138,7 @@ if (gameId==null) {
     else if (game.status==Game.IN_PLAY) {
     
         if (isUser1){
-            if (new Date().getTime() - game.lastTimeCheckedAccessedByUser2.getTime() > 5000 ) {
+            if (new Date().getTime() - game.lastTimeCheckedAccessedByUser2.getTime() > CONNECTION_OLD_MILLIS ) {
         
                 game.status=Game.USER_2_LOST_CONNECTION;
                 memcache.put("gameId_" + gameId,game);        
@@ -135,15 +146,13 @@ if (gameId==null) {
                 //throw new RuntimeException("User 2 lost connection");
             }
         } else {
-            if (new Date().getTime() - game.lastTimeCheckedAccessedByUser1.getTime() > 5000 ) {
+            if (new Date().getTime() - game.lastTimeCheckedAccessedByUser1.getTime() > CONNECTION_OLD_MILLIS ) {
         
                 game.status=Game.USER_1_LOST_CONNECTION;
                 //memcache.delete("userId_" + game.userId1);   
                 //throw new RuntimeException("User 1 lost connection");
             }        
         }
-
-        // TODO - Check user 1 connection
     
         System.out.println("Existing game in play");      
     
@@ -200,7 +209,6 @@ if (gameId==null) {
       
     // If game lost or game won?
     
-    // If lost connection?
 }
 
 %>
