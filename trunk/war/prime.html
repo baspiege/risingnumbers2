@@ -11,68 +11,12 @@
 //<![CDATA[
 
 /*
-TODO - Web
-* start multi player game (showing pending)
-* when self game over, send to other.
-* when other game over, stop this game and say game won!
-
-* when starting, have countdown 3... 2.... 1...
-
-* check if opponent ball collides with top...
-
-* if lost connection, write in board (remove)
-
-Minor
-* add move mouse up (like touch up)
-* hide pause/resume if online play
+TODO
+- Key board controls - left, right, space bar to shoot.
 
 Version 2
-- Key board controls - left, right, space bar to shoot.
 - Different starting patterns
 */
-
-var XMLHttpFactories = [
-	function () {return new XMLHttpRequest()},
-	function () {return new ActiveXObject("Msxml2.XMLHTTP")},
-	function () {return new ActiveXObject("Msxml3.XMLHTTP")},
-	function () {return new ActiveXObject("Microsoft.XMLHTTP")}
-];
-
-function createXMLHTTPObject() {
-	var xmlhttp = false;
-	for (var i=0;i<XMLHttpFactories.length;i++) {
-		try {
-			xmlhttp = XMLHttpFactories[i]();
-		}
-		catch (e) {
-			continue;
-		}
-		break;
-	}
-	return xmlhttp;
-}
-
-var xmlHttpRequester=createXMLHTTPObject();
-
-function sendRequest(url,callback,postData) {
-	var req = xmlHttpRequester;
-	if (!req) return;
-	var method = (postData) ? "POST" : "GET";
-	req.open(method,url,true);
-	req.setRequestHeader('User-Agent','XMLHTTP/1.0');
-	if (postData)
-		req.setRequestHeader('Content-type','application/x-www-form-urlencoded');
-	req.onreadystatechange = function () {
-		if (req.readyState != 4) return;
-		if (req.status != 200 && req.status != 304) {
-//			alert('HTTP error ' + req.status);
-			return;
-		}
-		callback(req);
-	}
-	if (req.readyState == 4) return;
-	req.send(postData);
-}
 
 function setCookie(name,value,daysToExpire) {
   var date=new Date();
@@ -94,10 +38,6 @@ function getCookie(name)
     }
   }
   return "";
-}
-
-function eraseCookie(name) {
-	setCookie(name,"",-1);
 }
 
 function Ball() {
@@ -125,43 +65,19 @@ var HIGH_SCORE_COOKIE="highScore";
 var PAUSE_LABEL="Pause";
 var RESUME_LABEL="Resume";
 
-// Move queue outside box?
-var QUEUE_Y_BOUND=QUEUE_Y-(BALL_RADIUS*2)-1;
-var QUEUE_X_BOUND=121;
-
-// Multi play game status
-var PENDING=1;
-var IN_PLAY=2;
-var USER_1_LOST_CONNECTION=3;
-var USER_2_LOST_CONNECTION=4;
-var USER_1_WON=5;
-var USER_2_WON=6;
-var STARTING=7;
-
 // Game variables
 var ctx;
 var moveInterval; // Animation
-var multiplayInterval;
 var isGameOver=false;
 var isGameWon=false;
 var points=0;
 var pause=false;
 var currentPositionX=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
 var redrawBoard=false;
-var redrawBallsInQueue=false;
-var playOnline=false;
-
-// Multiplay game variables
-var multiPlayUserId="";
-var multiPlayGameStatus=0;
 
 // Board
 var balls=new Array();
 var ballsInQueue=new Array(); // Balls to shoot
-
-// Online play
-var ballsFromOpponent=new Array();
-var ballsToOpponent=new Array();
 
 // Current ball
 var currBall;
@@ -241,51 +157,6 @@ function createNewBall() {
     ball.x=x;
     x+=BALL_SPACING;
   }
-  
-  redrawBallsInQueue=true;
-}
-
-function handleRequest(req) {
- 
-  var results = req.responseText.split(",");
- 
-  if (results.length>0) {
-     //multiPlayGameStatus=parseInt(results[0]);
-     var status=parseInt(results[0]);
-     
-     if (status==USER_1_LOST_CONNECTION) {
-        updateMultiGameStatus("User 1 lost connection");
-     }
-     if (status==USER_2_LOST_CONNECTION) {
-        updateMultiGameStatus("User 2 lost connection");
-     }     
-     
-     if (status==IN_PLAY && multiPlayGameStatus==PENDING) {
-        multiPlayGameStatus=STARTING;
-     } else {
-        multiPlayGameStatus=status;
-     }
-  }
-  
-  if (results.length==3) {
-    var ball=new Ball();
-    ball.number=parseInt(results[1]);
-    ball.x=parseInt(results[2]);
-    ball.y=QUEUE_Y;
-    
-    ballsFromOpponent.push(ball);
-    drawBallsFromOpponent()
-  }
-}
-
-function incrementOpponent() {
-  // Move up opponent numbers
-  for (var i=0;i<ballsFromOpponent.length;i++) {
-    var ball=ballsFromOpponent[i];
-    clearBall(ball);
-    ball.y-=Y_DELTA;
-  }
-  drawBallsFromOpponent();
 }
 
 function incrementBoard() {
@@ -294,7 +165,6 @@ function incrementBoard() {
     drawBoard();
  
     clearInterval(moveInterval);
-    clearInterval(multiplayInterval);
     if (isGameWon) {
       drawGameWon();
     } else {
@@ -309,20 +179,7 @@ function incrementBoard() {
 
     return;
   }
-  
-  if (playOnline && multiPlayGameStatus==PENDING) {
-    ctx.clearRect(0,0,300,300);
-    drawWaitingForOpponent();
-    return;
-  }
-  
-  if (playOnline && multiPlayGameStatus==STARTING) {
-    drawStarting();
-    multiPlayGameStatus=IN_PLAY;
-    
-    return;
-  }
-  
+
   if (!shooting) {
     detectCollision();
   }
@@ -338,17 +195,13 @@ function incrementBoard() {
     moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
   }
 
-  if (playOnline) {
-    incrementOpponent();
-  }
-
   if (redrawBoard) {
     drawBoard();
     redrawBoard=false;
-  } else if (redrawBallsInQueue) {  
-    drawBallsInQueue();
-    redrawBallsInQueue=false;
   }
+  
+  // Draw balls in queue
+  drawBallsInQueue();
 }
 
 function detectBallCollision(ball_1, ball_2) {
@@ -368,14 +221,6 @@ function detectCollision() {
 
       // If divides with no remainder, then divide target.
       if (balls[i].number%currBall.number==0) {
-        
-        // Send to opponent
-        if (playOnline) {
-            var ballTo=new Ball();
-            ballTo.x=currBall.x;
-            ballTo.number=currBall.number;
-            ballsToOpponent.push(ballTo);
-        }
         
         // Calculate new value
         var newValue=balls[i].number/currBall.number;
@@ -441,18 +286,13 @@ function detectCollision() {
       createNewBall();
       drawBall(currBall);
     } else {
-      // Redraw draw if clearing over queue
-      if (currBall.y>QUEUE_Y_BOUND && currBall.x<QUEUE_X_BOUND) {
-        redrawBallsInQueue=true;
-      }
-    
       clearBall(currBall);
       currBall.y-=Y_DELTA;
       currBall.x=currentPositionX;
       drawBall(currBall);
     }
   }
- 
+
   return collision;
 }
 
@@ -466,31 +306,6 @@ function clearBall(ball) {
   ctx.arc(ball.x, ball.y, BALL_RADIUS_CLEAR, 0, Math.PI*2, true);
   ctx.closePath();
   ctx.fill();
-}
-
-function drawOpponentBall(ball) {
-
-  // Circle
-  ctx.beginPath();
-  ctx.fillStyle = "#ff0000";
-  ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI*2, true);
-  ctx.closePath();
-  ctx.fill();
-
-  // Color of number
-  ctx.fillStyle = "#ffffff";
-
-  // Adjust position based on number of digits
-  if (ball.number>99) {
-    ctx.font = "bold 18px serif";
-    ctx.fillText(ball.number,ball.x-14,ball.y+5);
-  } else if (ball.number>9) {
-    ctx.font = "bold 24px serif";
-    ctx.fillText(ball.number,ball.x-12,ball.y+7);
-  } else {
-    ctx.font = "bold 24px serif";
-    ctx.fillText(ball.number,ball.x-6,ball.y+7);
-  }
 }
 
 function drawBall(ball) {
@@ -530,26 +345,11 @@ function drawBallsInQueue() {
   }
 }
 
-function drawBallsFromOpponent() {
-  for (var i=0;i<ballsFromOpponent.length;i++) {
-    drawOpponentBall(ballsFromOpponent[i]);
-  }
-}
-
 function drawBoard() {
     ctx.clearRect(0,0,300,300);
     drawBallsOnBoard();  
     drawBall(currBall);
     drawBallsInQueue();
-    drawBallsFromOpponent();
-}
-
-function drawText(text) {
-
-  // Text
-  ctx.font = "bold 24px serif";
-  ctx.fillStyle = "#0000ff";
-  ctx.fillText(text,110,110);
 }
 
 function drawGameOver() {
@@ -577,18 +377,11 @@ function drawGameWon() {
 }
 
 function drawPaused() {
-  drawText("Paused!");
-}
 
-function drawStarting() {
-  drawText("Starting!");
-}
-
-function drawWaitingForOpponent() {
   // Text
   ctx.font = "bold 24px serif";
   ctx.fillStyle = "#0000ff";
-  ctx.fillText("Waiting for opponent...",40,110);
+  ctx.fillText("Paused!",110,110);
 }
 
 function updatePointsDisplay() {
@@ -605,10 +398,6 @@ function updateHighScoreDisplay() {
 
 function updatePauseButton(label) {
   document.getElementById("pauseButton").innerHTML=label;
-}
-
-function updateMultiGameStatus(status) {
-  document.getElementById("multiGameStatus").innerHTML=status;
 }
 
 ///////////////////
@@ -690,21 +479,6 @@ function init() {
   newGame();
 }
 
-function multiplayConnection() {
-
-    var postData=null;
-    
-    postData="userId=" + multiPlayUserId;
-
-    // Get next ball to shoot
-    if (ballsToOpponent.length>0) {
-      var ballTo=ballsToOpponent.shift();
-      postData+="&number="+ballTo.number + "&x=" + ballTo.x;
-    }
-
-    sendRequest('multiplay.jsp',handleRequest,postData);
-}
-
 function newGame() {
 
   // If not supported, stop processing.
@@ -715,7 +489,6 @@ function newGame() {
   // Stop animation
   if (moveInterval) {
     clearInterval(moveInterval);
-    clearInterval(multiplayInterval);
   }
 
   // Reset variables
@@ -727,20 +500,6 @@ function newGame() {
   shooting=false;
   pause=false;
   updatePauseButton(PAUSE_LABEL);
-  
-  // Multi play
-  ballsFromOpponent=new Array();
-  ballsToOpponent=new Array();
-  multiPlayUserId=createRandomExclusive(1000000000000000);
-  
-  // TODO - Remove
-  //eraseCookie("JSESSIONID");
-  
-  // TODO - Move HTML before JavaScript?
-  var playOnlineInput=document.getElementById("playOnline");
-  if (playOnlineInput) {
-    playOnline=playOnlineInput.checked;
-  }
 
   // Create board, new ball
   createBoard();
@@ -752,9 +511,6 @@ function newGame() {
 
   // Start animation.
   moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
-  if (playOnline) {
-    multiplayInterval=setInterval(multiplayConnection, 2000);
-  }
 }
 
 function pauseContinue() {
@@ -796,8 +552,7 @@ function pauseContinue() {
     </p>
   </canvas>
   <div style="float:left;margin-top:1em;">
-    <button onclick="newGame();return false;">New Game</button><br/><br/>
-    <input id="playOnline" type="checkbox">Play Online</input><span id="multiGameStatus"></span>
+    <button onclick="newGame();return false;">New Game</button>
   </div>
   <div style="float:right;margin-top:1em;">
     <button id="pauseButton" onclick="pauseContinue();return false;">Pause</button>
