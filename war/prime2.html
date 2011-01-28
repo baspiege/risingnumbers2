@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
-<title>Rising Numbers!</title>
+<title>Rising Numbers! - Multi play BETA</title>
 </head>
 <body>
 <script type="text/javascript">
@@ -253,26 +253,21 @@ function handleRequest(req) {
   var results = req.responseText.split(",");
  
   if (results.length>0) {
-     //multiPlayGameStatus=parseInt(results[0]);
-     var status=parseInt(results[0]);
+     var prevStatus=multiPlayGameStatus;
+     multiPlayGameStatus=parseInt(results[0]);
      
-     if (status==USER_1_LOST_CONNECTION) {
+     if (multiPlayGameStatus==USER_1_LOST_CONNECTION) {
         updateMultiGameStatus("User 1 lost connection");
      }
-     if (status==USER_2_LOST_CONNECTION) {
+     if (multiPlayGameStatus==USER_2_LOST_CONNECTION) {
         updateMultiGameStatus("User 2 lost connection");
      }     
      
-     if (status==IN_PLAY && multiPlayGameStatus!=IN_PLAY) {
-
+     if (multiPlayGameStatus==IN_PLAY && prevStatus!=IN_PLAY) {
         // Draw board and start animation
         clearBoard();
         drawBoard();
-        moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);  
-        multiPlayGameStatus=IN_PLAY;
-          
-     } else {
-        multiPlayGameStatus=status;
+        moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);          
      }
   }
   
@@ -319,22 +314,15 @@ function incrementBoard() {
     return;
   }
   
+  /* TODO - Not needed...
   if (playOnline) {
     if (multiPlayGameStatus==PENDING) {
-      //debug("pending");
       clearBoard();
       drawWaitingForOpponent();
       return;
-    } else if (multiPlayGameStatus==STARTING) {
-      //debug("starting");
-      // Draw board and start animation
-      clearBoard();
-      drawBoard();
-      moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);  
-      multiPlayGameStatus=IN_PLAY;
-      return;
     }
   }
+  */
   
   if (!shooting) {
     detectCollision();
@@ -812,7 +800,7 @@ function pauseContinue() {
 //]]>
 </script>
 <div style="width:300px">
-  <p>Rising number divides!</p>
+  <p>Rising number divides! - Multi play BETA</p>
   <div style="float:left">Points: <span id="points">0</span></div>
   <div style="float:right">High Score: <span id="highScore">0</span></div>
   <canvas style="border:1px #000000 solid;" id="canvas" width="300" height="300">
