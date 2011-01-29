@@ -12,13 +12,11 @@
 
 /*
 TODO - Web
-* check if opponent ball collides with top
+* Check if opponent ball collides with top
 
 Minor
-* when starting, have countdown 3, 2, 1
-* add move mouse up (like touch up)
-* hide pause/resume if online play
-* if lost connection, write in board (remove)
+* When starting, have countdown 3, 2, 1
+* Add move mouse up (like touch up)
 
 Version 2
 - Key board controls - left, right, space bar to shoot.
@@ -90,10 +88,6 @@ function getCookie(name)
   return "";
 }
 
-function eraseCookie(name) {
-	setCookie(name,"",-1);
-}
-
 function Ball() {
   this.x=0;
   this.y=0;
@@ -130,12 +124,9 @@ var QUEUE_X_BOUND=121;
 // Multi play game status
 var PENDING=1;
 var IN_PLAY=2;
-var USER_1_LOST_CONNECTION=3;
-var USER_2_LOST_CONNECTION=4;
-var STARTING=7;
-
-var USER_WON=10;
-var USER_LOST=11;
+var OPPONENT_LOST_CONNECTION=3;
+var USER_WON=4;
+var USER_LOST=5;
 
 // Multiplay constants
 var CONNECTION_MILLIS=2000;
@@ -251,22 +242,16 @@ function handleRequest(req) {
  
   var results = req.responseText.split(",");
  
+  // Should always have status
   if (results.length>0) {
      var prevStatus=multiPlayGameStatus;
      multiPlayGameStatus=parseInt(results[0]);
      
-     // TODO - Just take in lost connection.  no need for 2 constants.
-     if (multiPlayGameStatus==USER_1_LOST_CONNECTION) {
-        updateMultiGameStatus("User 1 lost connection");
+     if (multiPlayGameStatus==OPPONENT_LOST_CONNECTION) {
+        //debug("Opponent lost connection");
         isGameOver=true;
         isGameWon=true;
-     } else if (multiPlayGameStatus==USER_2_LOST_CONNECTION) {
-        updateMultiGameStatus("User 2 lost connection");
-        isGameOver=true;
-        isGameWon=true;
-     }     
-     
-     if (multiPlayGameStatus==USER_WON) {
+     } else if (multiPlayGameStatus==USER_WON) {
         isGameOver=true;
         isGameWon=true;
      } else if (multiPlayGameStatus==USER_LOST) {
@@ -280,6 +265,7 @@ function handleRequest(req) {
      }
   }
   
+  // Next results are ball from the opponent
   if (results.length==3) {
     var ball=new Ball();
     ball.number=parseInt(results[1]);
@@ -583,10 +569,6 @@ function drawPaused() {
   drawText("Paused!");
 }
 
-function drawStarting() {
-  drawText("Starting!");
-}
-
 function drawWaitingForOpponent() {
   // Text
   ctx.font = "bold 24px serif";
@@ -610,8 +592,12 @@ function updatePauseButton(label) {
   document.getElementById("pauseButton").innerHTML=label;
 }
 
-function updateMultiGameStatus(status) {
-  document.getElementById("multiGameStatus").innerHTML=status;
+function showPauseButton(label) {
+  document.getElementById("pauseButton").style.display='block';
+}
+
+function hidePauseButton(label) {
+  document.getElementById("pauseButton").style.display='none';
 }
 
 ///////////////////
@@ -660,8 +646,9 @@ function shootBall() {
   return false;
 }
 
+// Only when non multi play
 function keyDownEscape(ev) {
-  if (ev.keyCode == '27') {
+  if (!playOnline && ev.keyCode == '27') {
     pauseContinue();
   }
 }
@@ -745,9 +732,6 @@ function newGame() {
   multiPlayUserId=createRandomExclusive(1000000000000000);
   multiPlayGameStatus=PENDING;
   
-  // TODO - Remove
-  //eraseCookie("JSESSIONID");
-  
   // TODO - Move HTML before JavaScript?
   var playOnlineInput=document.getElementById("playOnline");
   if (playOnlineInput) {
@@ -763,11 +747,13 @@ function newGame() {
   
   if (playOnline) {
     // Wait for opponent
+    hidePauseButton();
     clearBoard();
     drawWaitingForOpponent();    
     multiplayInterval=setInterval(multiplayConnection, CONNECTION_MILLIS);
   } else {
     // Draw board and start animation
+    showPauseButton();
     drawBoard();
     moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
   }
@@ -813,7 +799,7 @@ function pauseContinue() {
   </canvas>
   <div style="float:left;margin-top:1em;">
     <button onclick="newGame();return false;">New Game</button><br/><br/>
-    <input id="playOnline" type="checkbox">Play Online</input><span id="multiGameStatus"></span>
+    <input id="playOnline" type="checkbox">Play Online</input>
   </div>
   <div style="float:right;margin-top:1em;">
     <button id="pauseButton" onclick="pauseContinue();return false;">Pause</button>
