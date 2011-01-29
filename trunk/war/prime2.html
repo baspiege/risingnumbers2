@@ -12,8 +12,6 @@
 
 /*
 TODO - Web
-* when self game over, send to other.
-* when other game over, stop this game and say game won!
 * check if opponent ball collides with top
 
 Minor
@@ -134,9 +132,10 @@ var PENDING=1;
 var IN_PLAY=2;
 var USER_1_LOST_CONNECTION=3;
 var USER_2_LOST_CONNECTION=4;
-var USER_1_WON=5;
-var USER_2_WON=6;
 var STARTING=7;
+
+var USER_WON=10;
+var USER_LOST=11;
 
 // Multiplay constants
 var CONNECTION_MILLIS=2000;
@@ -256,14 +255,24 @@ function handleRequest(req) {
      var prevStatus=multiPlayGameStatus;
      multiPlayGameStatus=parseInt(results[0]);
      
+     // TODO - Just take in lost connection.  no need for 2 constants.
      if (multiPlayGameStatus==USER_1_LOST_CONNECTION) {
         updateMultiGameStatus("User 1 lost connection");
-     }
-     if (multiPlayGameStatus==USER_2_LOST_CONNECTION) {
+        isGameOver=true;
+        isGameWon=true;
+     } else if (multiPlayGameStatus==USER_2_LOST_CONNECTION) {
         updateMultiGameStatus("User 2 lost connection");
+        isGameOver=true;
+        isGameWon=true;
      }     
      
-     if (multiPlayGameStatus==IN_PLAY && prevStatus!=IN_PLAY) {
+     if (multiPlayGameStatus==USER_WON) {
+        isGameOver=true;
+        isGameWon=true;
+     } else if (multiPlayGameStatus==USER_LOST) {
+        isGameOver=true;
+        isGameWon=false;     
+     } else if (multiPlayGameStatus==IN_PLAY && prevStatus!=IN_PLAY) {
         // Draw board and start animation
         clearBoard();
         drawBoard();
@@ -296,9 +305,16 @@ function incrementBoard() {
 
   if (isGameOver) {
     drawBoard();
- 
+    
     clearInterval(moveInterval);
     clearInterval(multiplayInterval);
+    
+    // If online, one last request to signal game over.
+    // Might be duplicate.
+    if (playOnline) {
+      multiplayConnection();
+    }
+
     if (isGameWon) {
       drawGameWon();
     } else {
@@ -313,17 +329,7 @@ function incrementBoard() {
 
     return;
   }
-  
-  /* TODO - Not needed...
-  if (playOnline) {
-    if (multiPlayGameStatus==PENDING) {
-      clearBoard();
-      drawWaitingForOpponent();
-      return;
-    }
-  }
-  */
-  
+    
   if (!shooting) {
     detectCollision();
   }
@@ -396,14 +402,7 @@ function detectCollision() {
           
           // Add 1 to points
           points+=1;
-
-          // If no balls left on board, game won!
-          if (balls.length<1) {
-            isGameOver=true;
-            isGameWon=true;
-          }
-        }
-        else {
+        } else {
           // Clear current and redraw ball that was hit
           clearBall(currBall);
           drawBall(balls[i]);
@@ -423,7 +422,6 @@ function detectCollision() {
         // If over 99 or at bottom, game over!
         if (currBall.number>99 || currBall.y>260) {
             isGameOver=true;
-            isGameWon=false;
         } else {
           createNewBall();
           drawBall(currBall);
@@ -572,12 +570,12 @@ function drawGameOver() {
 function drawGameWon() {
 
   // Back ground
-  ctx.fillStyle = "#000000";
+  ctx.fillStyle = "#f0f0f0";
   ctx.fillRect(95, 80, 170, 50);
 
   // Text
   ctx.font = "bold 24px serif";
-  ctx.fillStyle = "#00ff00";
+  ctx.fillStyle = "#0000ff";
   ctx.fillText("Game won!",110,110);
 }
 
@@ -700,9 +698,12 @@ function multiplayConnection() {
     var postData=null;
     
     postData="userId=" + multiPlayUserId;
-
+    
+    if (isGameOver) {
+      postData+="&gameOver=" + isGameOver;
+    }
     // Get next ball to shoot
-    if (ballsToOpponent.length>0) {
+    else if (ballsToOpponent.length>0) {
       var ballTo=ballsToOpponent.shift();
       postData+="&number="+ballTo.number + "&x=" + ballTo.x;
     }
@@ -736,6 +737,7 @@ function newGame() {
   shooting=false;
   pause=false;
   updatePauseButton(PAUSE_LABEL);
+  debug('');
   
   // Multi play
   ballsFromOpponent=new Array();
