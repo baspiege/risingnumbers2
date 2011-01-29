@@ -1,29 +1,20 @@
-<%-- This JSP has the HTML for the store page. --%>
+<%-- This controls the multiplayer games. --%>
 <%@page pageEncoding="UTF-8" contentType="text/html; charset=UTF-8" %>
 <%@ page language="java"%>
-<%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.Date" %>
 <%@ page import="java.util.List" %>
-<%@ page import="java.util.HashMap" %>
-<%@ page import="java.util.Map" %>
-<%@ page import="java.util.Random" %>
-<%@ page import="risingnumbers.data.PMF" %>
 <%@ page import="risingnumbers.data.model.Game" %>
 <%@ page import="risingnumbers.data.model.Ball" %>
 <%@ page import="com.google.appengine.api.memcache.MemcacheService" %>
 <%@ page import="com.google.appengine.api.memcache.MemcacheServiceFactory" %>
 
-
 <%!
-
 // Constants
 public static int CONNECTION_OLD_MILLIS=5000;
-public static String PENDING_GAMES="pendingGames";
+public static String PENDING_GAME="pendingGame";
 public static String GAME_ID_PREFIX="gameId_";
 public static String USER_ID_PREFIX="userId_";
 public static String GAME_ID_GENERATOR="gameIdGenerator";
- 
-
 %>
 
 <%
@@ -32,6 +23,7 @@ response.setHeader("Pragma","no-cache");
 response.setDateHeader ("Expires", -1);
 
 /** Server
+* Change pending list to pending game... (there will be only 1 for now...) TEST
 * Get game status from game.  If over, signal to other player.
 */
 
@@ -41,78 +33,57 @@ String userId=request.getParameter("userId");
 Long gameId=null;
 
 if (userId==null || userId.trim().length()==0) {
-    // No user
+    // No user Id
     System.out.println("No user Id");
-    throw new RuntimeException("No user Id");
+    return;
 } else {
     userId=userId.trim();
     gameId=(Long)memcache.get(USER_ID_PREFIX+userId);
-    //System.out.println("Game Id: " + gameId);
 }
 
-// If game is null, check pending games.
+// If game is null, check pending game.
 if (gameId==null) {
-    System.out.println("No game Id");        
+    System.out.println("No game Id - checking pending game");        
     
-    // Get pending games
-    List<Game> pendingGames=(List<Game>)memcache.get(PENDING_GAMES);
-    
-    // If no pending games list, add new list.
-    if (pendingGames==null){
-        pendingGames=new ArrayList<Game>();
-        memcache.put(PENDING_GAMES, pendingGames);        
-        System.out.println("New pending game list");        
-    }
-    
-    // If no pending games, add pending game.
-    Game game=null;
-    if (!pendingGames.isEmpty()){
+    // Get pending game
+    Game pendingGame=(Game)memcache.get(PENDING_GAME);
+    if (pendingGame!=null){
         long time=new Date().getTime();
-        while (pendingGames.size()>0) {
-            // Get first 
-            game=(Game)pendingGames.remove(0);
         
-            if (time - game.lastTimeCheckedAccessedByUser1.getTime() > CONNECTION_OLD_MILLIS ) {
-                System.out.println("Removing old game Id: " + game.Id);               
-                memcache.delete(GAME_ID_PREFIX + gameId);
-                game=null;
-   
-                // Update list as well
-                memcache.put(PENDING_GAMES,pendingGames);            
-            } else {
-                System.out.println("Adding user to existing game Id: " + game.Id);               
-            
-                // Set as user 2 and put into play
-                game.userId2=userId;
-                game.lastTimeCheckedAccessedByUser2=new Date();
-                game.status=Game.IN_PLAY;
-                
-                // Update list
-                memcache.put(PENDING_GAMES,pendingGames);
-                break;
-            }
-            
-            // Get latest
-            pendingGames=(List<Game>)memcache.get(PENDING_GAMES);
+        // Check time
+        if (time - pendingGame.lastTimeCheckedAccessedByUser1.getTime() > CONNECTION_OLD_MILLIS ) {
+            System.out.println("Removing pending game Id: " + pendingGame.Id);               
+            memcache.delete(GAME_ID_PREFIX + pendingGame.Id);
+            memcache.delete(PENDING_GAME);
+            pendingGame=null;           
+        } else {
+            // Debug       
+            System.out.println("Adding user to existing game Id: " + pendingGame.Id);               
+        
+            // Set as user 2 and put into play
+            pendingGame.userId2=userId;
+            pendingGame.lastTimeCheckedAccessedByUser2=new Date();
+            pendingGame.status=Game.IN_PLAY;
+            memcache.delete(PENDING_GAME);
         }
     }
     
-    if (game==null) {
-        game=new Game();
-        game.Id=memcache.increment(GAME_ID_GENERATOR,1L,0L);
-        game.status=Game.PENDING;
-        game.userId1=userId;
-        game.lastTimeCheckedAccessedByUser1=new Date();
+    if (pendingGame==null) {        
+        // Create new pending game
+        pendingGame=new Game();
+        pendingGame.Id=memcache.increment(GAME_ID_GENERATOR,1L,0L);
+        pendingGame.status=Game.PENDING;
+        pendingGame.userId1=userId;
+        pendingGame.lastTimeCheckedAccessedByUser1=new Date();
+        memcache.put(PENDING_GAME,pendingGame);
         
-        System.out.println("Adding pending game Id: " + game.Id);        
-        
-        pendingGames.add(game);
-        memcache.put(PENDING_GAMES,pendingGames);
-    }    
+        // Debug
+        System.out.println("Creating pending game Id: " + pendingGame.Id);
+    }
 
     // Set in cache
-    memcache.put(GAME_ID_PREFIX+game.Id, game);    
-    memcache.put(USER_ID_PREFIX+userId,game.Id);
+    memcache.put(GAME_ID_PREFIX+pendingGame.Id, pendingGame);    
+    memcache.put(USER_ID_PREFIX+userId,pendingGame.Id);
 
 } else {
  
@@ -125,7 +96,7 @@ if (gameId==null) {
     if (game==null) {
         memcache.delete(GAME_ID_PREFIX + gameId);
         memcache.delete(USER_ID_PREFIX + userId);
-        throw new RuntimeException("Game object not found");
+        return;
     }
     
     // Check which user
@@ -143,11 +114,8 @@ if (gameId==null) {
     if (game.status==Game.PENDING) {    
         out.write( game.status + ",");
         System.out.println("Existing game pending");       
-        memcache.put(GAME_ID_PREFIX + gameId,game);        
-
-        List<Game> pendingGames=(List<Game>)memcache.get(PENDING_GAMES);        
-        
-        // TODO -  Get game in list and update that as well...
+        memcache.put(GAME_ID_PREFIX + gameId, game);
+        memcache.put(PENDING_GAME,game);
      }
  
     // If running, switch numbers. 
@@ -158,15 +126,11 @@ if (gameId==null) {
         
                 game.status=Game.USER_2_LOST_CONNECTION;
                 memcache.put(GAME_ID_PREFIX + gameId,game);        
-                //memcache.delete(USER_ID_PREFIX + game.userId2);
-                //throw new RuntimeException("User 2 lost connection");
             }
         } else {
-            if (new Date().getTime() - game.lastTimeCheckedAccessedByUser1.getTime() > CONNECTION_OLD_MILLIS ) {
-        
+            if (new Date().getTime() - game.lastTimeCheckedAccessedByUser1.getTime() > CONNECTION_OLD_MILLIS ) {        
                 game.status=Game.USER_1_LOST_CONNECTION;
-                //memcache.delete(USER_ID_PREFIX + game.userId1);   
-                //throw new RuntimeException("User 1 lost connection");
+                memcache.put(GAME_ID_PREFIX + gameId,game);
             }        
         }
     
@@ -188,8 +152,6 @@ if (gameId==null) {
             } else {
                 game.ballsToUser1.add(ball);            
             }
-            
-         //   memcache.put(GAME_ID_PREFIX + gameId,game);
         }
       
         Ball ballToSend=null;
@@ -203,19 +165,18 @@ if (gameId==null) {
         }
        
         if (ballsToSend.size()>0) {
-            ballToSend=(Ball)ballsToSend.remove(0);
-        //    memcache.put(GAME_ID_PREFIX + gameId,game);                    
-            
+            ballToSend=(Ball)ballsToSend.remove(0);          
         }
       
+        // Always send game status
         out.write( game.status + ",");
       
         if (ballToSend!=null){
-            System.out.println("Existing game in play - Returning ball");      
-        
+            System.out.println("Existing game in play - Returning ball");
             out.write( ballToSend.number + "," + ballToSend.x );
         } 
         
+        // Save game
         memcache.put(GAME_ID_PREFIX + gameId,game);        
     }
     else {
@@ -223,8 +184,6 @@ if (gameId==null) {
         out.write( game.status + "," );
     }
       
-    // If game lost or game won?
-    
+    // If game lost or game won?   
 }
-
 %>
