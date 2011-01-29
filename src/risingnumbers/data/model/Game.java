@@ -18,7 +18,9 @@ import javax.jdo.annotations.PrimaryKey;
 
 /**
  * Game which has id, user 1, user 2, balls to user 1, balls to user 2, and status.
- * 
+ *
+ * TODO - Remove annotations for datastore if not stored in datastore.
+ *
  * @author Brian Spiegel
  */
 public class Game implements Serializable {
@@ -31,7 +33,6 @@ public class Game implements Serializable {
     public static final int USER_2_LOST_CONNECTION = 4;    
     public static final int USER_1_WON = 5;
     public static final int USER_2_WON = 6;
-    public static final int STARTING = 1;
     
     @PrimaryKey 
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY) 

@@ -18,6 +18,8 @@ import javax.jdo.annotations.PrimaryKey;
 /**
  * Ball which has number and x value.
  * 
+ * TODO - Remove annotations for datastore if not stored in datastore.
+ *
  * @author Brian Spiegel
  */
 public class Ball implements Serializable {

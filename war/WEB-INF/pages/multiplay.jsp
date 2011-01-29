@@ -15,6 +15,17 @@ public static String PENDING_GAME="pendingGame";
 public static String GAME_ID_PREFIX="gameId_";
 public static String USER_ID_PREFIX="userId_";
 public static String GAME_ID_GENERATOR="gameIdGenerator";
+
+public static String NUMBER_PARAMETER="number";
+public static String X_PARAMETER="x";
+public static String STATUS_PARAMETER="status";  // remove?
+public static String GAME_OVER_PARAMETER="gameOver";  // remove?
+
+// TODO - Update constants sent to browser... (make different than game constants)
+public static int LOST_CONNECTION=9;
+public static int GAME_WON=10;
+public static int GAME_LOST=11;
+
 %>
 
 <%
@@ -22,9 +33,11 @@ response.setHeader("Cache-Control","no-cache");
 response.setHeader("Pragma","no-cache");
 response.setDateHeader ("Expires", -1);
 
-/** Server
-* Change pending list to pending game... (there will be only 1 for now...) TEST
-* Get game status from game.  If over, signal to other player.
+/** TODO
+
+* Clean up constants...
+* Clean up system outs...
+
 */
 
 MemcacheService memcache=MemcacheServiceFactory.getMemcacheService();
@@ -116,14 +129,26 @@ if (gameId==null) {
         System.out.println("Existing game pending");       
         memcache.put(GAME_ID_PREFIX + gameId, game);
         memcache.put(PENDING_GAME,game);
-     }
+        return;
+    }
+    
+    //  Check game over
+    String gameOverString=request.getParameter(GAME_OVER_PARAMETER);
+    if (gameOverString!=null && gameOverString.equals("true")) {
+        if (isUser1) {
+            game.status=Game.USER_2_WON;
+        } else {
+            game.status=Game.USER_1_WON;        
+        }
+        memcache.put(GAME_ID_PREFIX + gameId, game);
+    }
  
     // If running, switch numbers. 
-    else if (game.status==Game.IN_PLAY) {
+    if (game.status==Game.IN_PLAY) {
     
+        // Update last time checked
         if (isUser1){
             if (new Date().getTime() - game.lastTimeCheckedAccessedByUser2.getTime() > CONNECTION_OLD_MILLIS ) {
-        
                 game.status=Game.USER_2_LOST_CONNECTION;
                 memcache.put(GAME_ID_PREFIX + gameId,game);        
             }
@@ -135,10 +160,9 @@ if (gameId==null) {
         }
     
         System.out.println("Existing game in play");      
-    
-        //String 
-        String number=request.getParameter("number");
-        String x=request.getParameter("x");
+                    
+        String number=request.getParameter(NUMBER_PARAMETER);
+        String x=request.getParameter(X_PARAMETER);
 
         if (number!=null && x!=null){
             Ball ball=new Ball();
@@ -179,11 +203,17 @@ if (gameId==null) {
         // Save game
         memcache.put(GAME_ID_PREFIX + gameId,game);        
     }
-    else {
-    
-        out.write( game.status + "," );
-    }
-      
-    // If game lost or game won?   
+    else if (game.status==Game.USER_1_WON || game.status==Game.USER_2_WON) {
+        
+        //  Check game over
+        if ((isUser1 && game.status==Game.USER_1_WON)
+         || (!isUser1 && game.status==Game.USER_2_WON)) {
+            out.write( GAME_WON + "," );
+        } else {
+          out.write( GAME_LOST + "," );        
+        }
+    } else {
+        out.write( game.status + "," );    
+    }     
 }
 %>
