@@ -12,11 +12,11 @@
 
 /*
 TODO - Web
-* Check if opponent ball collides with top
+-
 
 Minor
-* When starting, have countdown 3, 2, 1
-* Add move mouse up (like touch up)
+- When starting, have countdown 3, 2, 1
+- Add move mouse up (like touch up)
 
 Version 2
 - Key board controls - left, right, space bar to shoot.
@@ -147,6 +147,7 @@ var playOnline=false;
 // Multiplay game variables
 var multiPlayUserId="";
 var multiPlayGameStatus=0;
+multiPlayGameStarted=false;
 
 // Board
 var balls=new Array();
@@ -257,8 +258,9 @@ function handleRequest(req) {
      } else if (multiPlayGameStatus==USER_LOST) {
         isGameOver=true;
         isGameWon=false;     
-     } else if (multiPlayGameStatus==IN_PLAY && prevStatus!=IN_PLAY) {
+     } else if (multiPlayGameStatus==IN_PLAY && !multiPlayGameStarted) {
         // Draw board and start animation
+        multiPlayGameStarted=true;
         clearBoard();
         drawBoard();
         moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);          
@@ -281,8 +283,9 @@ function incrementOpponent() {
   // Move up opponent numbers
   for (var i=0;i<ballsFromOpponent.length;i++) {
     var ball=ballsFromOpponent[i];
-    clearBall(ball);
-    ball.y-=Y_DELTA;
+    if (detectCollision(ball,false,false)) {
+      ballsFromOpponent.splice(i,1);
+    }
   }
   drawBallsFromOpponent();
 }
@@ -317,7 +320,7 @@ function incrementBoard() {
   }
     
   if (!shooting) {
-    detectCollision();
+    detectCollision(currBall,true,true);
   }
   // If shooting, stop animation, continue until ball hits, then restart
   // animation.
@@ -325,7 +328,7 @@ function incrementBoard() {
     clearInterval(moveInterval);
     var collision=false;
     while (!collision) {
-      collision=detectCollision();
+      collision=detectCollision(currBall,true,true);
     }
     shooting=false;
     moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
@@ -350,28 +353,28 @@ function detectBallCollision(ball_1, ball_2) {
   return Math.sqrt((dY*dY)+(dX*dX))<=BALL_DISTANCE;
 }
 
-function detectCollision() {
+function detectCollision(movingBall, willCreateNewBall, canMoveX) {
 
   var collision=false;
 
   // Detect collision with other balls
   for (var i=0;i<balls.length;i++) {
-    if (detectBallCollision(currBall,balls[i])) {
+    if (detectBallCollision(movingBall,balls[i])) {
       collision=true;
 
       // If divides with no remainder, then divide target.
-      if (balls[i].number%currBall.number==0) {
+      if (balls[i].number%movingBall.number==0) {
         
         // Send to opponent
         if (playOnline) {
             var ballTo=new Ball();
-            ballTo.x=currBall.x;
-            ballTo.number=currBall.number;
+            ballTo.x=movingBall.x;
+            ballTo.number=movingBall.number;
             ballsToOpponent.push(ballTo);
         }
         
         // Calculate new value
-        var newValue=balls[i].number/currBall.number;
+        var newValue=balls[i].number/movingBall.number;
 
         // Update points
         points+=balls[i].number-newValue;
@@ -390,27 +393,32 @@ function detectCollision() {
           points+=1;
         } else {
           // Clear current and redraw ball that was hit
-          clearBall(currBall);
+          clearBall(movingBall);
           drawBall(balls[i]);
         }
 
         updatePointsDisplay();
 
-        createNewBall();
+        if (willCreateNewBall){
+          createNewBall();
+          //drawBall(currBall);
+        }
       } else {
         // Add to current ball.
-        currBall.number+=balls[i].number;
-        drawBall(currBall);
+        movingBall.number+=balls[i].number;
+        drawBall(movingBall);
 
         // Add to board.
-        balls.push( currBall );
+        balls.push( movingBall );
 
         // If over 99 or at bottom, game over!
-        if (currBall.number>99 || currBall.y>260) {
+        if (movingBall.number>99 || movingBall.y>260) {
             isGameOver=true;
         } else {
-          createNewBall();
-          drawBall(currBall);
+          if (willCreateNewBall){
+            createNewBall();
+            //drawBall(currBall);
+          }
         }
       }
 
@@ -420,26 +428,33 @@ function detectCollision() {
 
   // Check if collision with top
   if (!collision) {
-    if (currBall.y<=MARGIN_TOP) {
+    if (movingBall.y<=MARGIN_TOP) {
       collision=true;
-      balls.push( currBall );
-      createNewBall();
-      drawBall(currBall);
+      balls.push( movingBall );
+      if (willCreateNewBall){
+        createNewBall();
+        //drawBall(currBall);
+      }
     } else {
       // Redraw draw if clearing over queue
-      if (currBall.y>QUEUE_Y_BOUND && currBall.x<QUEUE_X_BOUND) {
+      if (movingBall.y>QUEUE_Y_BOUND && movingBall.x<QUEUE_X_BOUND) {
         redrawBallsInQueue=true;
       }
     
-      clearBall(currBall);
-      currBall.y-=Y_DELTA;
-      currBall.x=currentPositionX;
-      drawBall(currBall);
+      clearBall(movingBall);
+      movingBall.y-=Y_DELTA;
+      
+      if (canMoveX){
+        movingBall.x=currentPositionX;
+      }
+      
+      drawBall(movingBall);
     }
   }
  
   return collision;
 }
+
 
 ///////////////////
 // Draw
@@ -731,6 +746,7 @@ function newGame() {
   ballsToOpponent=new Array();
   multiPlayUserId=createRandomExclusive(1000000000000000);
   multiPlayGameStatus=PENDING;
+  multiPlayGameStarted=false;
   
   // TODO - Move HTML before JavaScript?
   var playOnlineInput=document.getElementById("playOnline");
