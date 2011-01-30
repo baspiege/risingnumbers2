@@ -15,6 +15,7 @@ TODO - Web
 -
 
 Minor
+- Multi play - if opponent balls hit top, stays red - change to blue.
 - When starting, have countdown 3, 2, 1
 - Add move mouse up (like touch up)
 
@@ -148,14 +149,12 @@ var playOnline=false;
 var multiPlayUserId="";
 var multiPlayGameStatus=0;
 var multiPlayGameStarted=false;
+var ballsFromOpponent=new Array();
+var ballsToOpponent=new Array();
 
 // Board
 var balls=new Array();
 var ballsInQueue=new Array(); // Balls to shoot
-
-// Online play
-var ballsFromOpponent=new Array();
-var ballsToOpponent=new Array();
 
 // Current ball
 var currBall;
@@ -548,14 +547,6 @@ function drawBoard() {
     drawBallsFromOpponent();
 }
 
-function drawText(text) {
-
-  // Text
-  ctx.font = "bold 24px serif";
-  ctx.fillStyle = "#0000ff";
-  ctx.fillText(text,110,110);
-}
-
 function drawGameOver() {
 
   // Back ground
@@ -581,7 +572,10 @@ function drawGameWon() {
 }
 
 function drawPaused() {
-  drawText("Paused!");
+  // Text
+  ctx.font = "bold 24px serif";
+  ctx.fillStyle = "#0000ff";
+  ctx.fillText("Paused!",110,110);
 }
 
 function drawWaitingForOpponent() {
@@ -697,10 +691,10 @@ function init() {
 
 function multiplayConnection() {
 
-    var postData=null;
+    // Always add user Id
+    var postData="userId=" + multiPlayUserId;
     
-    postData="userId=" + multiPlayUserId;
-    
+    // Flag if game is over
     if (isGameOver) {
       postData+="&gameOver=" + isGameOver;
     }
