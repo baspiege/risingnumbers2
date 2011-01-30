@@ -116,7 +116,7 @@ if (gameId==null) {
 
     // Check which user
     boolean isUser1=userId.equals(game.userId1);
-    System.out.println(userId + " " + game.userId1 + " " + isUser1);
+    System.out.println(userId + " " + isUser1);
 
     // Update time stamps
     if (isUser1){
