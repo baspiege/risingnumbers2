@@ -238,32 +238,50 @@ function createNewBall() {
   redrawBallsInQueue=true;
 }
 
+// Handle request for multi play game
 function handleRequest(req) {
+
+  if (!playOnline) {
+    return;
+  }
  
   var results = req.responseText.split(",");
  
   // Should always have status
   if (results.length>0) {
-     var prevStatus=multiPlayGameStatus;
-     multiPlayGameStatus=parseInt(results[0]);
+    var prevStatus=multiPlayGameStatus;
+    multiPlayGameStatus=parseInt(results[0]);
      
-     if (multiPlayGameStatus==OPPONENT_LOST_CONNECTION) {
-        //debug("Opponent lost connection");
-        isGameOver=true;
-        isGameWon=true;
-     } else if (multiPlayGameStatus==USER_WON) {
-        isGameOver=true;
-        isGameWon=true;
-     } else if (multiPlayGameStatus==USER_LOST) {
-        isGameOver=true;
-        isGameWon=false;     
-     } else if (multiPlayGameStatus==IN_PLAY && !multiPlayGameStarted) {
+    // If not started
+    if (!multiPlayGameStarted) {    
+      // Start game
+      if (multiPlayGameStatus==IN_PLAY) {
         // Draw board and start animation
         multiPlayGameStarted=true;
         clearBoard();
         drawBoard();
         moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);          
-     }
+      }
+      // Start a new game (these shouldn't occur normally)
+      else if (multiPlayGameStatus==OPPONENT_LOST_CONNECTION
+        || multiPlayGameStatus==USER_WON
+        || multiPlayGameStatus==USER_LOST) {
+        newGame();
+      }
+    }
+    // Else, started...
+    else {
+      if (multiPlayGameStatus==OPPONENT_LOST_CONNECTION) {
+        isGameOver=true;
+        isGameWon=true;
+      } else if (multiPlayGameStatus==USER_WON) {
+        isGameOver=true;
+        isGameWon=true;
+      } else if (multiPlayGameStatus==USER_LOST) {
+        isGameOver=true;
+        isGameWon=false;     
+      }
+    }
   }
   
   // Next results are ball from the opponent
@@ -282,7 +300,7 @@ function incrementOpponent() {
   // Move up opponent numbers
   for (var i=0;i<ballsFromOpponent.length;i++) {
     var ball=ballsFromOpponent[i];
-    if (detectCollision(ball,false,false)) {
+    if (detectCollision(ball,false,true)) {
       ballsFromOpponent.splice(i,1);
     }
   }
