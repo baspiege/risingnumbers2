@@ -16,12 +16,18 @@ public class Game implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final int PENDING = 1;
-    public static final int IN_PLAY = 2;
-    public static final int USER_1_LOST_CONNECTION = 3;
-    public static final int USER_2_LOST_CONNECTION = 4;
-    public static final int USER_1_WON = 5;
-    public static final int USER_2_WON = 6;
+    public static final int CONFIRM_START_1_AND_2 = 2;    
+    public static final int CONFIRMED_START_1 = 3;
+    public static final int CONFIRMED_START_2 = 4;
+    public static final int IN_PLAY = 5;
+    public static final int USER_1_LOST_CONNECTION = 6;
+    public static final int USER_2_LOST_CONNECTION = 7;
+    public static final int USER_1_WON = 8;
+    public static final int USER_2_WON = 9;
 
+
+
+    
     public long Id;
 
     public String userId1;

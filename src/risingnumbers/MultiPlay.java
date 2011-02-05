@@ -19,7 +19,7 @@ import com.google.appengine.api.memcache.MemcacheServiceFactory;
 
 /**
 * TODO
-* Add double handshake to beginning
+* Add double handshake to beginning - Test.
 *
 * Minor:
 * Comment out system outs
@@ -96,7 +96,7 @@ public class MultiPlay extends HttpServlet {
                     // Set as user 2 and put into play
                     pendingGame.userId2=userId;
                     pendingGame.lastTimeCheckedAccessedByUser2=new Date();
-                    pendingGame.status=Game.IN_PLAY;
+                    pendingGame.status=Game.CONFIRM_START_1_AND_2;
                     memcache.delete(PENDING_GAME);
                 }
             }
@@ -167,13 +167,29 @@ public class MultiPlay extends HttpServlet {
             // Check for lost connections
             if (isUser1){
                 if (new Date().getTime() - game.lastTimeCheckedAccessedByUser2.getTime() > CONNECTION_OLD_MILLIS ) {
-                    game.status=Game.USER_2_LOST_CONNECTION;
-                    memcache.put(GAME_ID_PREFIX + gameId,game);
+                
+                    if (!isGameBeingConfirmed(game.status)) {
+                        game.status=Game.USER_2_LOST_CONNECTION;
+                        memcache.put(GAME_ID_PREFIX + gameId,game);
+                    } else {
+                        // Remove game because it hasn't even started
+                        removeGame(memcache,game);
+                        out.write( RESPONSE_PENDING );
+                        return;
+                    }
                 }
             } else {
                 if (new Date().getTime() - game.lastTimeCheckedAccessedByUser1.getTime() > CONNECTION_OLD_MILLIS ) {
-                    game.status=Game.USER_1_LOST_CONNECTION;
-                    memcache.put(GAME_ID_PREFIX + gameId,game);
+                
+                    if (!isGameBeingConfirmed(game.status)) {
+                        game.status=Game.USER_1_LOST_CONNECTION;
+                        memcache.put(GAME_ID_PREFIX + gameId,game);
+                    } else {
+                        // Remove game because it hasn't even started
+                        removeGame(memcache,game);
+                        out.write( RESPONSE_PENDING );
+                        return;
+                    }                    
                 }
             }
 
@@ -246,6 +262,55 @@ public class MultiPlay extends HttpServlet {
                     out.write( RESPONSE_USER_LOST );
                 }
             }
+            // Confirm start
+            else if (isGameBeingConfirmed(game.status)) {
+                if (isUser1) {
+                    // If 2 already confirmed, now 1 is confirming.  So start play.
+                    if (game.status==Game.CONFIRMED_START_2) {
+                        game.status=Game.IN_PLAY;
+                        memcache.put(GAME_ID_PREFIX + gameId,game);
+                        out.write( RESPONSE_IN_PLAY );
+                        return;
+                    } else if (game.status==Game.CONFIRM_START_1_AND_2) {
+                        // Confirm 1.
+                        game.status=Game.CONFIRMED_START_1;
+                        memcache.put(GAME_ID_PREFIX + gameId,game);
+                    }
+                } else {
+                    // If 1 already confirmed, now 2 is confirming.  So start play.
+                    if (game.status==Game.CONFIRMED_START_1) {
+                        game.status=Game.IN_PLAY;
+                        memcache.put(GAME_ID_PREFIX + gameId,game);
+                        out.write( RESPONSE_IN_PLAY );
+                        return;
+                    } else if (game.status==Game.CONFIRM_START_1_AND_2) {
+                        // Confirm 2.
+                        game.status=Game.CONFIRMED_START_2;
+                        memcache.put(GAME_ID_PREFIX + gameId,game);
+                    }                
+                }
+               
+                out.write( RESPONSE_PENDING );
+                return;
+            }
         }
     }    
+    
+   /**
+    * Check if confirming.
+    */
+    public static boolean isGameBeingConfirmed(int status) {
+        return status==Game.CONFIRM_START_1_AND_2
+            || status==Game.CONFIRMED_START_1
+            || status==Game.CONFIRMED_START_2;
+    }
+    
+    /**
+    * Remove game.
+    */
+    public static void removeGame(MemcacheService memcache, Game game) {
+        memcache.delete(GAME_ID_PREFIX + game.Id);
+        memcache.delete(USER_ID_PREFIX + game.userId1);
+        memcache.delete(USER_ID_PREFIX + game.userId2);
+    }
 }
