@@ -12,10 +12,10 @@
 
 /*
 TODO - Web
--
+- Move opponent ball up if exists.
+- Send points - acct for extra 1 - TEST
 
 Minor
-- Multi play - if opponent balls hit top, stays red - change to blue.
 - When starting, have countdown 3, 2, 1
 - Add move mouse up (like touch up)
 
@@ -113,6 +113,7 @@ var BALL_RADIUS=15;
 var BALL_DISTANCE=BALL_RADIUS*2;
 var BALL_RADIUS_CLEAR=BALL_RADIUS+1; // 1 more than radius to prevent shadow.
 var HIGH_SCORE_COOKIE="highScore";
+var OPPONENT_BALLS_IN_QUEUE_DISPLAY=3; // Multi play only
 
 // Labels
 var PAUSE_LABEL="Pause";
@@ -217,25 +218,32 @@ function createBoard() {
 
 function createNewBall() {
 
-  // Get latest
-  currBall=ballsInQueue.pop();
-  currBall.x+=BALL_SPACING; // Move to end of line.
+  if (playOnline && ballsFromOpponent.length > 0) {
+    // Get latest from opponent balls
+    currBall = ballsFromOpponent.shift();
+    currBall.y = QUEUE_Y;
+  } else {
 
-  // Create new ball and add to back.
-  var ball=new Ball();
-  ball.number=createRandomExclusive(NEW_BALL_MAX)+2;
-  ball.y=QUEUE_Y;
-  ballsInQueue.splice(0,0,ball);
+    // Get latest
+    currBall=ballsInQueue.pop();
+    currBall.x+=BALL_SPACING; // Move to end of line.
 
-  // Move up rest of queue
-  var x=MARGIN_LEFT;
-  for (var i=0;i<ballsInQueue.length;i++) {
-    var ball=ballsInQueue[i];
-    ball.x=x;
-    x+=BALL_SPACING;
+    // Create new ball and add to back.
+    var ball=new Ball();
+    ball.number=createRandomExclusive(NEW_BALL_MAX)+2;
+    ball.y=QUEUE_Y;
+    ballsInQueue.splice(0,0,ball);
+
+    // Move up rest of queue
+    var x=MARGIN_LEFT;
+    for (var i=0;i<ballsInQueue.length;i++) {
+      var ball=ballsInQueue[i];
+      ball.x=x;
+      x+=BALL_SPACING;
+    }
+    
+    redrawBallsInQueue=true;
   }
-  
-  redrawBallsInQueue=true;
 }
 
 // Handle request for multi play game
@@ -249,7 +257,6 @@ function handleRequest(req) {
  
   // Should always have status
   if (results.length>0) {
-    var prevStatus=multiPlayGameStatus;
     multiPlayGameStatus=parseInt(results[0]);
      
     // If not started
@@ -288,23 +295,20 @@ function handleRequest(req) {
   if (results.length==3) {
     var ball=new Ball();
     ball.number=parseInt(results[1]);
-    ball.x=parseInt(results[2]);
+    
+    var x=0;
+    if (ballsFromOpponent.length==0) {
+      x=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
+    } else {
+      x=MARGIN_LEFT+((ballsFromOpponent.length+3)*BALL_SPACING);
+    }
+    
+    ball.x=x;//parseInt(results[2]);
     ball.y=QUEUE_Y;
     
     ballsFromOpponent.push(ball);
     drawBallsFromOpponent()
   }
-}
-
-function incrementOpponent() {
-  // Move up opponent numbers
-  for (var i=0;i<ballsFromOpponent.length;i++) {
-    var ball=ballsFromOpponent[i];
-    if (detectCollision(ball,false,true)) {
-      ballsFromOpponent.splice(i,1);
-    }
-  }
-  drawBallsFromOpponent();
 }
 
 function incrementBoard() {
@@ -352,7 +356,7 @@ function incrementBoard() {
   }
 
   if (playOnline) {
-    incrementOpponent();
+    drawBallsFromOpponent();
   }
 
   if (redrawBoard) {
@@ -382,19 +386,11 @@ function detectCollision(movingBall, willCreateNewBall, canMoveX) {
       // If divides with no remainder, then divide target.
       if (balls[i].number%movingBall.number==0) {
         
-        // Send to opponent
-        if (playOnline) {
-            var ballTo=new Ball();
-            ballTo.x=movingBall.x;
-            ballTo.number=movingBall.number;
-            ballsToOpponent.push(ballTo);
-        }
-        
         // Calculate new value
         var newValue=balls[i].number/movingBall.number;
 
-        // Update points
-        points+=balls[i].number-newValue;
+        // Calculate points
+        var pointsToAdd=balls[i].number-newValue;
 
         // Update ball
         balls[i].number=newValue;
@@ -407,13 +403,22 @@ function detectCollision(movingBall, willCreateNewBall, canMoveX) {
           redrawBoard=true;
           
           // Add 1 to points
-          points+=1;
+          pointsToAdd+=1;
         } else {
           // Clear current and redraw ball that was hit
           clearBall(movingBall);
           drawBall(balls[i]);
         }
+        
+        // Send to opponent
+        if (playOnline) {
+            var ballTo=new Ball();
+            ballTo.x=movingBall.x;
+            ballTo.number=pointsToAdd;
+            ballsToOpponent.push(ballTo);
+        }
 
+        points+=pointsToAdd;
         updatePointsDisplay();
 
         if (willCreateNewBall){
@@ -552,7 +557,13 @@ function drawBallsInQueue() {
 }
 
 function drawBallsFromOpponent() {
-  for (var i=0;i<ballsFromOpponent.length;i++) {
+  var size = ballsFromOpponent.length;
+
+  // Limit display
+  if (size>OPPONENT_BALLS_IN_QUEUE_DISPLAY) {
+    size=OPPONENT_BALLS_IN_QUEUE_DISPLAY;
+  }
+  for (var i=0;i<size;i++) {
     drawOpponentBall(ballsFromOpponent[i]);
   }
 }
@@ -710,19 +721,19 @@ function init() {
 function multiplayConnection() {
 
     // Always add user Id
-    var postData="userId=" + multiPlayUserId;
+    var data="userId=" + multiPlayUserId;
     
     // Flag if game is over
     if (isGameOver) {
-      postData+="&gameOver=" + isGameOver;
+      data+="&gameOver=" + isGameOver;
     }
     // Get next ball to shoot
     else if (ballsToOpponent.length>0) {
       var ballTo=ballsToOpponent.shift();
-      postData+="&number="+ballTo.number + "&x=" + ballTo.x;
+      data+="&number="+ballTo.number + "&x=" + ballTo.x;
     }
 
-    sendRequest('multiplay.jsp',handleRequest,postData);
+    sendRequest('multiplay.jsp?'+data,handleRequest);
 }
 
 function newGame() {
