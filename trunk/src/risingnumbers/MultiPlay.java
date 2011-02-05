@@ -20,11 +20,9 @@ import com.google.appengine.api.memcache.MemcacheServiceFactory;
 /**
 * TODO
 * Add double handshake to beginning
-* Change ball to integer
 *
 * Minor:
-* Clean up system outs
-* Break up into small methods
+* Comment out system outs
 *
 */
 public class MultiPlay extends HttpServlet {
@@ -41,7 +39,6 @@ public class MultiPlay extends HttpServlet {
     // Response parameter names
     public static String USER_ID_PARAMETER="userId";
     public static String NUMBER_PARAMETER="number";
-    public static String X_PARAMETER="x";
     public static String GAME_OVER_PARAMETER="gameOver";
 
     // Response constants.  Different than game status constants.
@@ -51,6 +48,9 @@ public class MultiPlay extends HttpServlet {
     public static int RESPONSE_USER_WON=4;
     public static int RESPONSE_USER_LOST=5;
 
+    /**
+    * Process the request.
+    */
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
       
         // Don't cache
@@ -67,7 +67,7 @@ public class MultiPlay extends HttpServlet {
 
         // Check if user Id
         if (userId==null || userId.trim().length()==0) {
-            System.out.println("No user Id");
+            System.err.println("No user Id");
             return;
         } else {
             userId=userId.trim();
@@ -127,6 +127,7 @@ public class MultiPlay extends HttpServlet {
 
             // If null, then error
             if (game==null) {
+                System.err.println("Existing game Id is null");
                 memcache.delete(GAME_ID_PREFIX + gameId);
                 memcache.delete(USER_ID_PREFIX + userId);
                 return;
@@ -145,8 +146,8 @@ public class MultiPlay extends HttpServlet {
 
             // If pending, return
             if (game.status==Game.PENDING) {
-                out.write( RESPONSE_PENDING + ",");
                 System.out.println("Existing game pending");
+                out.write( RESPONSE_PENDING );
                 memcache.put(GAME_ID_PREFIX + gameId, game);
                 memcache.put(PENDING_GAME,game);
                 return;
@@ -182,12 +183,10 @@ public class MultiPlay extends HttpServlet {
 
                 // Get ball from request
                 String number=request.getParameter(NUMBER_PARAMETER);
-                String x=request.getParameter(X_PARAMETER);
 
-                if (number!=null && x!=null){
+                if (number!=null) {
                     Ball ball=new Ball();
                     ball.number=new Integer(number).intValue();
-                    ball.x=new Integer(x).intValue();
 
                     System.out.println("Existing game in play - Adding ball");
 
@@ -215,11 +214,11 @@ public class MultiPlay extends HttpServlet {
                 }
 
                 // Always send game status
-                out.write( RESPONSE_IN_PLAY + ",");
+                out.write( RESPONSE_IN_PLAY );
 
                 if (ballToSend!=null){
                     System.out.println("Existing game in play - Returning ball");
-                    out.write( ballToSend.number + "," + ballToSend.x );
+                    out.write( "," + ballToSend.number );
                 }
 
                 // Save game
@@ -230,9 +229,9 @@ public class MultiPlay extends HttpServlet {
                 // Check user
                 if ((isUser1 && game.status==Game.USER_1_WON)
                 || (!isUser1 && game.status==Game.USER_2_WON)) {
-                    out.write( RESPONSE_USER_WON + "," );
+                    out.write( RESPONSE_USER_WON );
                 } else {
-                  out.write( RESPONSE_USER_LOST + "," );
+                  out.write( RESPONSE_USER_LOST );
                 }
             }
             // Lost connection
@@ -240,14 +239,13 @@ public class MultiPlay extends HttpServlet {
                 // Check user
                 if ((isUser1 && game.status==Game.USER_2_LOST_CONNECTION)
                 || (!isUser1 && game.status==Game.USER_1_LOST_CONNECTION)) {
-                    out.write( RESPONSE_OPPONENT_LOST_CONNECTION + "," );
+                    out.write( RESPONSE_OPPONENT_LOST_CONNECTION );
                 }
                 // The user that lost the connection will see game lost if they reconnect
                 else {
-                    out.write( RESPONSE_USER_LOST + "," );
+                    out.write( RESPONSE_USER_LOST );
                 }
             }
         }
     }    
 }
-

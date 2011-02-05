@@ -730,7 +730,7 @@ function multiplayConnection() {
     // Get next ball to shoot
     else if (ballsToOpponent.length>0) {
       var ballTo=ballsToOpponent.shift();
-      data+="&number="+ballTo.number + "&x=" + ballTo.x;
+      data+="&number="+ballTo.number;
     }
 
     sendRequest('MultiPlay?'+data,handleRequest);
