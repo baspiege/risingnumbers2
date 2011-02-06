@@ -203,7 +203,7 @@ function createNewBall() {
   // Else, create a new ball.
   var newBall;
   if (playOnline && ballsFromOpponent.length > 0) {
-    // Get latest from opponent balls
+    // Get oldest from opponent balls
     newBall = ballsFromOpponent.shift();
   } else {  
     // Create new ball
@@ -308,7 +308,7 @@ function incrementBoard() {
   }
     
   if (!shooting) {
-    detectCollision(currBall,true,true);
+    detectCollision(currBall);
   }
   // If shooting, stop animation, continue until ball hits, then restart
   // animation.
@@ -316,7 +316,7 @@ function incrementBoard() {
     clearInterval(moveInterval);
     var collision=false;
     while (!collision) {
-      collision=detectCollision(currBall,true,true);
+      collision=detectCollision(currBall);
     }
     shooting=false;
     moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
@@ -337,7 +337,7 @@ function detectBallCollision(ball_1, ball_2) {
   return Math.sqrt((dY*dY)+(dX*dX))<=BALL_DISTANCE;
 }
 
-function detectCollision(movingBall, willCreateNewBall, canMoveX) {
+function detectCollision(movingBall) {
 
   var collision=false;
 
@@ -383,11 +383,7 @@ function detectCollision(movingBall, willCreateNewBall, canMoveX) {
 
         points+=pointsToAdd;
         updatePointsDisplay();
-
-        if (willCreateNewBall){
-          createNewBall();
-          //drawBall(currBall);
-        }
+        createNewBall();
       } else {
         // Add to current ball.
         movingBall.number+=balls[i].number;
@@ -398,12 +394,9 @@ function detectCollision(movingBall, willCreateNewBall, canMoveX) {
 
         // If over 99 or at bottom, game over!
         if (movingBall.number>99 || movingBall.y>260) {
-            isGameOver=true;
+          isGameOver=true;
         } else {
-          if (willCreateNewBall){
-            createNewBall();
-            //drawBall(currBall);
-          }
+          createNewBall();
         }
       }
 
@@ -416,10 +409,7 @@ function detectCollision(movingBall, willCreateNewBall, canMoveX) {
     if (movingBall.y<=MARGIN_TOP) {
       collision=true;
       balls.push( movingBall );
-      if (willCreateNewBall){
-        createNewBall();
-        //drawBall(currBall);
-      }
+      createNewBall();
     } else {
       // Redraw draw if clearing over queue
       if (movingBall.y>QUEUE_Y_BOUND && movingBall.x<QUEUE_X_BOUND) {
@@ -428,10 +418,7 @@ function detectCollision(movingBall, willCreateNewBall, canMoveX) {
     
       clearBall(movingBall);
       movingBall.y-=Y_DELTA;
-      
-      if (canMoveX){
-        movingBall.x=currentPositionX;
-      }
+      movingBall.x=currentPositionX;
       
       drawBall(movingBall);
     }
