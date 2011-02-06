@@ -19,7 +19,6 @@ import com.google.appengine.api.memcache.MemcacheServiceFactory;
 
 /**
 * TODO
-* Add double handshake to beginning - Test.
 *
 * Minor:
 * Comment out system outs
@@ -42,11 +41,11 @@ public class MultiPlay extends HttpServlet {
     public static String GAME_OVER_PARAMETER="gameOver";
 
     // Response constants.  Different than game status constants.
-    public static int RESPONSE_PENDING=1;
-    public static int RESPONSE_IN_PLAY=2;
-    public static int RESPONSE_OPPONENT_LOST_CONNECTION=3;
-    public static int RESPONSE_USER_WON=4;
-    public static int RESPONSE_USER_LOST=5;
+    public static String RESPONSE_PENDING="1";
+    public static String RESPONSE_IN_PLAY="2";
+    public static String RESPONSE_OPPONENT_LOST_CONNECTION="3";
+    public static String RESPONSE_USER_WON="4";
+    public static String RESPONSE_USER_LOST="5";
 
     /**
     * Process the request.
