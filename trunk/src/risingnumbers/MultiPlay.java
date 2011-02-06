@@ -75,7 +75,7 @@ public class MultiPlay extends HttpServlet {
 
         // If game is null, check pending game.
         if (gameId==null) {
-            System.out.println("No game Id - checking pending game");
+            System.out.println("No game Id");
 
             // Get pending game
             Game pendingGame=(Game)memcache.get(PENDING_GAME);
@@ -269,11 +269,13 @@ public class MultiPlay extends HttpServlet {
                         game.status=Game.IN_PLAY;
                         memcache.put(GAME_ID_PREFIX + gameId,game);
                         out.write( RESPONSE_IN_PLAY );
+                        System.out.println("User 1 confirmed - starting game");
                         return;
                     } else if (game.status==Game.CONFIRM_START_1_AND_2) {
                         // Confirm 1.
                         game.status=Game.CONFIRMED_START_1;
                         memcache.put(GAME_ID_PREFIX + gameId,game);
+                        System.out.println("User 1 confirmed");
                     }
                 } else {
                     // If 1 already confirmed, now 2 is confirming.  So start play.
@@ -281,11 +283,13 @@ public class MultiPlay extends HttpServlet {
                         game.status=Game.IN_PLAY;
                         memcache.put(GAME_ID_PREFIX + gameId,game);
                         out.write( RESPONSE_IN_PLAY );
+                        System.out.println("User 2 confirmed - starting game");
                         return;
                     } else if (game.status==Game.CONFIRM_START_1_AND_2) {
                         // Confirm 2.
                         game.status=Game.CONFIRMED_START_2;
                         memcache.put(GAME_ID_PREFIX + gameId,game);
+                        System.out.println("User 2 confirmed");
                     }                
                 }
                

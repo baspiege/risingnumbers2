@@ -419,7 +419,6 @@ function detectCollision(movingBall) {
       clearBall(movingBall);
       movingBall.y-=Y_DELTA;
       movingBall.x=currentPositionX;
-      
       drawBall(movingBall);
     }
   }
@@ -442,31 +441,6 @@ function clearBall(ball) {
   ctx.arc(ball.x, ball.y, BALL_RADIUS_CLEAR, 0, Math.PI*2, true);
   ctx.closePath();
   ctx.fill();
-}
-
-function drawOpponentBall(ball) {
-
-  // Circle
-  ctx.beginPath();
-  ctx.fillStyle = "#ff0000";
-  ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI*2, true);
-  ctx.closePath();
-  ctx.fill();
-
-  // Color of number
-  ctx.fillStyle = "#ffffff";
-
-  // Adjust position based on number of digits
-  if (ball.number>99) {
-    ctx.font = "bold 18px serif";
-    ctx.fillText(ball.number,ball.x-14,ball.y+5);
-  } else if (ball.number>9) {
-    ctx.font = "bold 24px serif";
-    ctx.fillText(ball.number,ball.x-12,ball.y+7);
-  } else {
-    ctx.font = "bold 24px serif";
-    ctx.fillText(ball.number,ball.x-6,ball.y+7);
-  }
 }
 
 function drawBall(ball) {
@@ -704,7 +678,7 @@ function newGame() {
   // Multi play
   ballsFromOpponent=new Array();
   ballsToOpponent=new Array();
-  multiPlayUserId=createRandomExclusive(1000000000000000);
+  multiPlayUserId=0;
   multiPlayGameStatus=PENDING;
   multiPlayGameStarted=false;
   
@@ -722,6 +696,9 @@ function newGame() {
   updatePointsDisplay();
   
   if (playOnline) {
+    // Create new id
+    multiPlayUserId=createRandomExclusive(1000000000000000);
+    
     // Wait for opponent
     hidePauseButton();
     clearBoard();
