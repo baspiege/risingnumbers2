@@ -4,17 +4,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
-<title>Rising Numbers! - Multi play BETA</title>
+<title>Rising Numbers!</title>
 </head>
 <body>
 <script type="text/javascript">
 //<![CDATA[
 
 /*
-TODO - Web
-- Send points - acct for extra 1 - TEST
-- Clear opponent ball when sent?
-- For ease, just have one queue of balls being sent...
+TODO
 
 Minor
 - When starting, have countdown 3, 2, 1
@@ -24,29 +21,6 @@ Version 2
 - Key board controls - left, right, space bar to shoot.
 - Different starting patterns
 */
-
-var XMLHttpFactories = [
-	function () {return new XMLHttpRequest()},
-	function () {return new ActiveXObject("Msxml2.XMLHTTP")},
-	function () {return new ActiveXObject("Msxml3.XMLHTTP")},
-	function () {return new ActiveXObject("Microsoft.XMLHTTP")}
-];
-
-function createXMLHTTPObject() {
-	var xmlhttp = false;
-	for (var i=0;i<XMLHttpFactories.length;i++) {
-		try {
-			xmlhttp = XMLHttpFactories[i]();
-		}
-		catch (e) {
-			continue;
-		}
-		break;
-	}
-	return xmlhttp;
-}
-
-var xmlHttpRequester=createXMLHTTPObject();
 
 function sendRequest(url,callback,postData) {
 	var req = xmlHttpRequester;
@@ -114,7 +88,6 @@ var BALL_RADIUS=15;
 var BALL_DISTANCE=BALL_RADIUS*2;
 var BALL_RADIUS_CLEAR=BALL_RADIUS+1; // 1 more than radius to prevent shadow.
 var HIGH_SCORE_COOKIE="highScore";
-var OPPONENT_BALLS_IN_QUEUE_DISPLAY=3; // Multi play only
 
 // Labels
 var PAUSE_LABEL="Pause";
@@ -161,6 +134,9 @@ var ballsInQueue=new Array(); // Balls to shoot
 // Current ball
 var currBall;
 var shooting=false; // Is shooting?
+
+// XmlHttpRequest
+var xmlHttpRequester=new XMLHttpRequest();
 
 ///////////////////
 // Utilities
@@ -219,32 +195,34 @@ function createBoard() {
 
 function createNewBall() {
 
+  // Get latest
+  currBall=ballsInQueue.pop();
+  currBall.x+=BALL_SPACING; // Move to end of line.
+
+  // For new ball to queue, if mulitplay, get from opponents balls.
+  // Else, create a new ball.
+  var newBall;
   if (playOnline && ballsFromOpponent.length > 0) {
     // Get latest from opponent balls
-    currBall = ballsFromOpponent.shift();
-    currBall.x=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
-  } else {
-
-    // Get latest
-    currBall=ballsInQueue.pop();
-    currBall.x+=BALL_SPACING; // Move to end of line.
-
-    // Create new ball and add to back.
-    var ball=new Ball();
-    ball.number=createRandomExclusive(NEW_BALL_MAX)+2;
-    ball.y=QUEUE_Y;
-    ballsInQueue.splice(0,0,ball);
-
-    // Move up rest of queue
-    var x=MARGIN_LEFT;
-    for (var i=0;i<ballsInQueue.length;i++) {
-      var ball=ballsInQueue[i];
-      ball.x=x;
-      x+=BALL_SPACING;
-    }
-    
-    redrawBallsInQueue=true;
+    newBall = ballsFromOpponent.shift();
+  } else {  
+    // Create new ball
+    newBall=new Ball();
+    newBall.number=createRandomExclusive(NEW_BALL_MAX)+2;
   }
+  
+  newBall.y=QUEUE_Y;
+  ballsInQueue.splice(0,0,newBall);
+    
+  // Move up rest of queue
+  var x=MARGIN_LEFT;
+  for (var i=0;i<ballsInQueue.length;i++) {
+    var ball=ballsInQueue[i];
+    ball.x=x;
+    x+=BALL_SPACING;
+  }
+  
+  redrawBallsInQueue=true;
 }
 
 // Handle request for multi play game
@@ -296,9 +274,7 @@ function handleRequest(req) {
   if (results.length==2) {
     var ball=new Ball();
     ball.number=parseInt(results[1]);
-    ball.y = QUEUE_Y; // 'x' set before ball released.  Determined when drawing.
     ballsFromOpponent.push(ball);
-    drawBallsFromOpponent();
   }
 }
 
@@ -344,10 +320,6 @@ function incrementBoard() {
     }
     shooting=false;
     moveInterval=setInterval(incrementBoard, ANIMATION_MILLIS);
-  }
-
-  if (playOnline) {
-    drawBallsFromOpponent();
   }
 
   if (redrawBoard) {
@@ -547,25 +519,11 @@ function drawBallsInQueue() {
   }
 }
 
-function drawBallsFromOpponent() {
-  var size = ballsFromOpponent.length;
-
-  // Limit display
-  if (size>OPPONENT_BALLS_IN_QUEUE_DISPLAY) {
-    size=OPPONENT_BALLS_IN_QUEUE_DISPLAY;
-  }
-  for (var i=0;i<size;i++) {
-    ballsFromOpponent[i].x=MARGIN_LEFT+((i+BALLS_IN_QUEUE)*BALL_SPACING);
-    drawOpponentBall(ballsFromOpponent[i]);
-  }
-}
-
 function drawBoard() {
     clearBoard();
     drawBallsOnBoard();  
     drawBall(currBall);
     drawBallsInQueue();
-    drawBallsFromOpponent();
 }
 
 function drawGameOver() {
@@ -603,7 +561,7 @@ function drawWaitingForOpponent() {
   // Text
   ctx.font = "bold 24px serif";
   ctx.fillStyle = "#0000ff";
-  ctx.fillText("Waiting for opponent...",40,110);
+  ctx.fillText("Waiting for opponent...",20,110);
 }
 
 function updatePointsDisplay() {
@@ -819,7 +777,7 @@ function pauseContinue() {
 //]]>
 </script>
 <div style="width:300px">
-  <p>Rising number divides! - Multi play BETA</p>
+  <p>Rising number divides!</p>
   <div style="float:left">Points: <span id="points">0</span></div>
   <div style="float:right">High Score: <span id="highScore">0</span></div>
   <canvas style="border:1px #000000 solid;" id="canvas" width="300" height="300">
