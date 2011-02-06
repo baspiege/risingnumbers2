@@ -12,8 +12,9 @@
 
 /*
 TODO - Web
-- Move opponent ball up if exists.
 - Send points - acct for extra 1 - TEST
+- Clear opponent ball when sent?
+- For ease, just have one queue of balls being sent...
 
 Minor
 - When starting, have countdown 3, 2, 1
@@ -221,7 +222,7 @@ function createNewBall() {
   if (playOnline && ballsFromOpponent.length > 0) {
     // Get latest from opponent balls
     currBall = ballsFromOpponent.shift();
-    currBall.y = QUEUE_Y;
+    currBall.x=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
   } else {
 
     // Get latest
@@ -292,22 +293,12 @@ function handleRequest(req) {
   }
   
   // Next results are ball from the opponent
-  if (results.length==3) {
+  if (results.length==2) {
     var ball=new Ball();
     ball.number=parseInt(results[1]);
-    
-    var x=0;
-    if (ballsFromOpponent.length==0) {
-      x=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
-    } else {
-      x=MARGIN_LEFT+((ballsFromOpponent.length+3)*BALL_SPACING);
-    }
-    
-    ball.x=x;//parseInt(results[2]);
-    ball.y=QUEUE_Y;
-    
+    ball.y = QUEUE_Y; // 'x' set before ball released.  Determined when drawing.
     ballsFromOpponent.push(ball);
-    drawBallsFromOpponent()
+    drawBallsFromOpponent();
   }
 }
 
@@ -564,6 +555,7 @@ function drawBallsFromOpponent() {
     size=OPPONENT_BALLS_IN_QUEUE_DISPLAY;
   }
   for (var i=0;i<size;i++) {
+    ballsFromOpponent[i].x=MARGIN_LEFT+((i+BALLS_IN_QUEUE)*BALL_SPACING);
     drawOpponentBall(ballsFromOpponent[i]);
   }
 }
