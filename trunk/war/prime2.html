@@ -376,7 +376,6 @@ function detectCollision(movingBall) {
         // Send to opponent
         if (playOnline) {
             var ballTo=new Ball();
-            ballTo.x=movingBall.x;
             ballTo.number=pointsToAdd;
             ballsToOpponent.push(ballTo);
         }
