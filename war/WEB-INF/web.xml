@@ -12,6 +12,6 @@
       <url-pattern>/MultiPlay</url-pattern>
     </servlet-mapping>
     <welcome-file-list>
-        <welcome-file>prime.html</welcome-file>
+        <welcome-file>prime2.html</welcome-file>
     </welcome-file-list>
 </web-app>
