@@ -285,12 +285,6 @@ function incrementBoard() {
     
     clearInterval(moveInterval);
     clearInterval(multiplayInterval);
-    
-    // If online, one last request to signal game over.
-    // Might be duplicate.
-    if (playOnline) {
-      multiplayConnection();
-    }
 
     if (isGameWon) {
       drawGameWon();
@@ -394,6 +388,12 @@ function detectCollision(movingBall) {
         // If over 99 or at bottom, game over!
         if (movingBall.number>99 || movingBall.y>260) {
           isGameOver=true;
+          
+          // If online, one last request to signal game over.
+          // Might be duplicate.
+          if (playOnline) {
+            multiplayConnection();
+          }
         } else {
           createNewBall();
         }

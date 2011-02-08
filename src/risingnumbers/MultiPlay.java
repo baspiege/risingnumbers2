@@ -134,7 +134,7 @@ public class MultiPlay extends HttpServlet {
 
             // Check which user
             boolean isUser1=userId.equals(game.userId1);
-            System.out.println(userId + " " + isUser1);
+            System.out.println(userId + " " + isUser1 );
 
             // Update time stamps
             if (isUser1){
@@ -152,17 +152,6 @@ public class MultiPlay extends HttpServlet {
                 return;
             }
 
-            //  Check game over
-            String gameOverString=request.getParameter(GAME_OVER_PARAMETER);
-            if (gameOverString!=null && gameOverString.equals("true")) {
-                if (isUser1) {
-                    game.status=Game.USER_2_WON;
-                } else {
-                    game.status=Game.USER_1_WON;
-                }
-                memcache.put(GAME_ID_PREFIX + gameId, game);
-            }
-
             // Check for lost connections
             if (isUser1){
                 if (new Date().getTime() - game.lastTimeCheckedAccessedByUser2.getTime() > CONNECTION_OLD_MILLIS ) {
@@ -170,10 +159,12 @@ public class MultiPlay extends HttpServlet {
                     if (!isGameBeingConfirmed(game.status)) {
                         game.status=Game.USER_2_LOST_CONNECTION;
                         memcache.put(GAME_ID_PREFIX + gameId,game);
+                        System.out.println("User 2 lost connection");
                     } else {
                         // Remove game because it hasn't even started
                         removeGame(memcache,game);
                         out.write( RESPONSE_PENDING );
+                        System.out.println("User 2 lost connection and game not started");
                         return;
                     }
                 }
@@ -183,17 +174,37 @@ public class MultiPlay extends HttpServlet {
                     if (!isGameBeingConfirmed(game.status)) {
                         game.status=Game.USER_1_LOST_CONNECTION;
                         memcache.put(GAME_ID_PREFIX + gameId,game);
+                        System.out.println("User 1 lost connection");
                     } else {
                         // Remove game because it hasn't even started
                         removeGame(memcache,game);
                         out.write( RESPONSE_PENDING );
+                        System.out.println("User 1 lost connection and game not started");
                         return;
                     }                    
                 }
             }
 
-            // If running, switch numbers.
+            // Check if game over
             if (game.status==Game.IN_PLAY) {
+                
+                //  Check game over
+                String gameOverString=request.getParameter(GAME_OVER_PARAMETER);
+                if (gameOverString!=null && gameOverString.equals("true")) {
+                    if (isUser1) {
+                        game.status=Game.USER_2_WON;
+                        System.out.println("Game over - user 2 won");
+                    } else {
+                        game.status=Game.USER_1_WON;
+                        System.out.println("Game over - user 1 won");
+                    }
+                    memcache.put(GAME_ID_PREFIX + gameId, game);
+                }
+            }
+
+            // If running, switch numbers.            
+            if (game.status==Game.IN_PLAY) {
+            
                 System.out.println("Existing game in play");
 
                 // Get ball from request
