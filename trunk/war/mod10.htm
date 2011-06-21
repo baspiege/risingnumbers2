@@ -1,0 +1,445 @@
+<!DOCTYPE HTML>
+<!-- Copyright 2011 Brian Spiegel -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+<title>Mod 10</title>
+<style type="text/css">
+    table.board {text-align:center;font-size:300%;font-weight:bold;border:1px solid black;"}
+    table.board td {width:1em;padding:5px;border:1px solid black;}
+    td.c1 {background-color: #ff0000; color: #ffffff}
+    td.c2 {background-color: #00ff00; color: #ffffff}
+    td.c3 {background-color: #0000ff; color: #ffffff}
+    td.c4 {background-color: #ff00ff; color: #000000}
+    td.c0 {background-color: #00ffff; color: #000000}
+    td.goal {background-color: #c0c0c0; color: #000000 }
+    td.highlight {background-color: #ffff00; color: #000000 }
+</style>
+
+<script type="text/javascript">//<![CDATA[
+
+// FE
+// Best times
+// Time component
+
+////////////////////////////////////////
+// Global vars
+////////////////////////////////////////
+
+var g_board;
+var g_maxRow=0;
+var g_maxCol=0;
+
+var g_colGoals;
+var g_rowGoals;
+
+var g_selectedCol=-1;
+var g_selectedRow=-1;
+
+
+////////////////////////////////////////
+// Utilities
+////////////////////////////////////////
+
+// Array contains element
+Array.prototype.contains= function (element)
+{
+    for (var i=0; i<this.length; i++)
+    {
+        if (this[i]==element)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Shuffle
+function shuffle(array)
+{
+    var i = array.length;
+    if ( i == 0 ) return false;
+    while ( --i )
+    {
+        var j = Math.floor( Math.random()*(i+1) );
+        var tempi = array[i];
+        var tempj = array[j];
+        array[i] = tempj;
+        array[j] = tempi;
+    }
+}
+
+// Create random number. 0 to max.
+function createRandomNumber(max)
+{
+    return Math.round( Math.random()*max );
+}
+
+// Get row total
+function getRowTotalMod10(row)
+{
+    var rowCount=0;
+
+    for (var i=0;i<g_maxCol;i++)
+    {
+        var num=g_board[i][row];
+        rowCount+=num;
+    }
+
+    return rowCount%10;
+}
+
+// Check row
+function checkRow(row)
+{
+    return (getRowTotalMod10(row)==g_rowGoals[row]);
+}
+
+// Check rows
+function checkRows()
+{
+    var rows=new Array();
+
+    for (var i=0;i<g_maxRow;i++)
+    {
+        if (checkRow(i))
+        {
+            rows.push(i);
+        }
+    }
+
+    return rows;
+}
+
+// Get col total
+function getColTotalMod10(col)
+{
+    var colCount=0;
+
+    for (var i=0;i<g_maxRow;i++)
+    {
+        var num=g_board[col][i];
+        colCount+=num;
+    }
+
+    return colCount%10;
+}
+
+// Check col
+function checkCol(col)
+{
+    return (getColTotalMod10(col)==g_colGoals[col]);
+}
+
+// Check cols
+function checkCols()
+{
+    var cols=new Array();
+
+    for (var i=0;i<g_maxCol;i++)
+    {
+        if (checkCol(i))
+        {
+            cols.push(i);
+        }
+    }
+
+    return cols;
+}
+
+// Check game over
+// Also highlights goals
+function checkGameOver()
+{
+    var rowsAttained=checkRows();
+    var colsAttained=checkCols();
+
+    // Highlight rows
+    for (var i=0;i<g_maxRow;i++)
+    {
+        if (rowsAttained.contains(i))
+        {
+            updateRowGoal(i,true);
+        }
+        else
+        {
+            updateRowGoal(i,false);
+        }
+    }
+
+    // Highlight cols
+    for (var i=0;i<g_maxCol;i++)
+    {
+        if (colsAttained.contains(i))
+        {
+            updateColGoal(i,true);
+        }
+        else
+        {
+            updateColGoal(i,false);
+        }
+    }
+
+    // If all attained
+    if (rowsAttained.length==g_maxRow && colsAttained.length==g_maxCol)
+    {
+        alert("Done!");
+    }
+}
+
+////////////////////////////////////////
+// Action
+////////////////////////////////////////
+
+// Select cell
+function selectCell(col,row)
+{
+    // If no previous selected, select.
+    if (g_selectedCol==-1 && g_selectedRow==-1)
+    {
+        g_selectedCol=col;
+        g_selectedRow=row;
+
+        // Highlight selected
+        updateCell(col,row,true);
+    }
+    // If selected is same as previous, unselect.
+    else if (g_selectedCol==col && g_selectedRow==row)
+    {
+        g_selectedCol=-1;
+        g_selectedRow=-1;
+
+        // Unhighlight selected
+        updateCell(col,row,false);
+    }
+    // Switch cells
+    else
+    {
+        var selectedNumber=g_board[g_selectedCol][g_selectedRow];
+        g_board[g_selectedCol][g_selectedRow]=g_board[col][row];
+        g_board[col][row]=selectedNumber;
+
+        // Update display
+        updateCell(g_selectedCol,g_selectedRow,false);
+        updateCell(col,row,false);
+
+        // Deselect for next
+        g_selectedCol=-1;
+        g_selectedRow=-1;
+
+        checkGameOver();
+    }
+}
+
+////////////////////////////////////////
+// Set-up
+////////////////////////////////////////
+
+// Create board
+function createBoard()
+{
+    g_board=new Array(g_maxCol);
+
+    for (var i=0;i<g_maxCol;i++)
+    {
+        g_board[i]=new Array();
+
+        for (var j=0;j<g_maxRow;j++)
+        {
+            g_board[i].push( createRandomNumber(9) );
+        }
+    }
+
+    // Col goals
+    g_colGoals=new Array();
+    for (var i=0;i<g_maxCol;i++)
+    {
+        g_colGoals.push( getColTotalMod10(i) );
+    }
+
+    // Row goals
+    g_rowGoals=new Array();
+    for (var i=0;i<g_maxRow;i++)
+    {
+        g_rowGoals.push( getRowTotalMod10(i) );
+    }
+
+    // Put columns into one array and shuffle.
+    var numbers=new Array();
+    for (var i=0;i<g_maxCol;i++)
+    {
+        numbers=numbers.concat(g_board[i]);
+    }
+
+    // Shuffle 3 times
+    shuffle(numbers);
+    shuffle(numbers);
+    shuffle(numbers);
+
+    // Put back
+    for (var j=g_maxRow-1; j>-1 ; j--)
+    {
+        for (var i=0;i<g_maxCol;i++)
+        {
+            g_board[i][j]= numbers.shift();
+        }
+    }
+}
+
+////////////////////////////////////////
+// Display
+////////////////////////////////////////
+
+// Create board display
+function createBoardDisplay()
+{
+    var display="<table class=\"board\">";
+
+    for (var i=g_maxRow-1; i>-1 ; i--)
+    {
+        display+="<tr>";
+
+        for (var j=0; j<g_maxCol; j++)
+        {
+            var number=g_board[j][i];
+
+            display+="<td id=\"" + j + "," + i + "\" class=\"";
+
+            // Color
+            display+="c" + number%5 + "\" ";
+
+            display+="onclick=\"selectCell(" + j + "," + i + ")\">";
+            display+=number;
+            display+="</td>";
+        }
+
+        // Row goals
+        display+="<td id=\"rg" + i + "\" class=\"goal\">";
+        display+=g_rowGoals[i];
+        display+="</td>";
+
+        display+="</tr>";
+    }
+
+    // Bottom row - column goals
+    display+="<tr>";
+    for (var j=0; j<g_maxCol; j++)
+    {
+        display+="<td id=\"cg" + j + "\" class=\"goal\">";
+        display+=g_colGoals[j];
+        display+="</td>";
+    }
+    display+="<td>G</td></tr>";
+
+    display+="</table>";
+
+    return display;
+}
+
+// Update board
+function updateBoard()
+{
+    document.getElementById("board").innerHTML=createBoardDisplay();
+}
+
+// Update cell
+function updateCell(col,row,highlight)
+{
+    var cell=document.getElementById( col + "," + row);
+
+    cell.innerHTML=g_board[col][row];
+
+    if (highlight==true)
+    {
+        cell.className="highlight";
+    }
+    else
+    {
+        cell.className="c" + g_board[col][row]%5;
+    }
+}
+
+// Update row goal
+function updateRowGoal(row,highlight)
+{
+    var goal=document.getElementById( "rg" + row);
+
+    if (highlight)
+    {
+        goal.className="highlight";
+    }
+    else
+    {
+        goal.className="goal";
+    }
+}
+
+// Update col goal
+function updateColGoal(col,highlight)
+{
+    var goal=document.getElementById( "cg" + col);
+
+    if (highlight)
+    {
+        goal.className="highlight";
+    }
+    else
+    {
+        goal.className="goal";
+    }
+}
+
+////////////////////////////////////////
+// Main
+////////////////////////////////////////
+
+function startNewGame()
+{
+    // Reset selected
+    g_selectedCol=-1;
+    g_selectedRow=-1;
+
+    // Set rows/cols
+    var size=parseInt(document.getElementById("size").value);
+    g_maxCol=size;
+    g_maxRow=size;
+
+    // Create board
+    createBoard();
+
+    // Update display
+    updateBoard();
+
+    // Check game over - for highlighting and it's of course possible :)
+    checkGameOver();
+}
+
+//]]></script>
+</head>
+<body onload="startNewGame();">
+
+    <p> Goal = Sum (col | row) % 10
+    </p>
+
+    <div id="board"></div>
+    
+    <!-- New Game -->
+    <form action="">
+        <p> Board Size
+            <select id="size" name="size">
+                <option value="2">2</option>
+                <option value="3" selected="selected">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+            </select>
+            <button onclick="startNewGame();return false;">New Game</button>
+        </p>
+    </form>
+</body>
+</html>
