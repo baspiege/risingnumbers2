@@ -26,12 +26,6 @@ td.highlightGoal { background-color: #ffff00; color: #000000 ;
 
 @keyframes animateCell
 {
-/*
-0% {background-color: #ffffff; color: #000000 ;}
-25% {background-color: #0000ff;}
-50% {background-color: #00ff00;}
-75% {background-color: #ff0000;}
-*/
 100% {
 transform: rotateY(360deg);
 -webkit-transform: rotateY(360deg); /* Safari and Chrome */}
@@ -39,12 +33,6 @@ transform: rotateY(360deg);
 
 @-webkit-keyframes animateCell /*Safari and Chrome */
 {
-/*
-0% {background-color: #ffffff; color: #000000 ;}
-25% {background-color: #0000ff;}
-50% {background-color: #00ff00;}
-75% {background-color: #ff0000;}
-*/
 100% {
 background-color: #ffff00; color: #000000 ;
 transform: rotateY(360deg);
@@ -115,16 +103,11 @@ function getRowTotalMod10(row) {
   return rowCount%10;
 }
 
-// Check row
-function checkRow(row) {
-  return (getRowTotalMod10(row)==g_rowGoals[row]);
-}
-
 // Check rows
 function checkRows() {
   var rows=new Array();
   for (var i=0;i<g_maxRow;i++) {
-    if (checkRow(i)) {
+    if ((getRowTotalMod10(i)==g_rowGoals[i])) {
       rows.push(i);
     }
   }
@@ -141,16 +124,11 @@ function getColTotalMod10(col) {
   return colCount%10;
 }
 
-// Check col
-function checkCol(col) {
-  return (getColTotalMod10(col)==g_colGoals[col]);
-}
-
 // Check cols
 function checkCols() {
   var cols=new Array();
   for (var i=0;i<g_maxCol;i++) {
-    if (checkCol(i)) {
+    if (getColTotalMod10(i)==g_colGoals[i]) {
         cols.push(i);
     }
   }
@@ -225,37 +203,31 @@ function selectCell(col,row)
 // Create board
 function createBoard() {
   g_board=new Array(g_maxCol);
-
   for (var i=0;i<g_maxCol;i++) {
     g_board[i]=new Array();
     for (var j=0;j<g_maxRow;j++) {
       g_board[i].push( createRandomNumber(9) );
     }
   }
-
   // Col goals
   g_colGoals=new Array();
   for (var i=0;i<g_maxCol;i++) {
     g_colGoals.push( getColTotalMod10(i) );
   }
-
   // Row goals
   g_rowGoals=new Array();
   for (var i=0;i<g_maxRow;i++) {
     g_rowGoals.push( getRowTotalMod10(i) );
   }
-
   // Put columns into one array and shuffle.
   var numbers=new Array();
   for (var i=0;i<g_maxCol;i++) {
     numbers=numbers.concat(g_board[i]);
   }
-
   // Shuffle 3 times
   shuffle(numbers);
   shuffle(numbers);
   shuffle(numbers);
-
   // Put back
   for (var j=g_maxRow-1; j>-1 ; j--) {
     for (var i=0;i<g_maxCol;i++) {
@@ -343,16 +315,13 @@ function startNewGame() {
   // Reset selected
   g_selectedCol=-1;
   g_selectedRow=-1;
-
   // Set rows/cols
   var size=parseInt(document.getElementById("size").value);
   g_maxCol=size;
   g_maxRow=size;
-
   // Create board and update display
   createBoard();
   updateBoard();
-
   // Check game over - for highlighting and it's of course possible :)
   checkGameOver();
 }
