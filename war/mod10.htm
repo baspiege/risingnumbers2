@@ -337,14 +337,22 @@ function touchMove(ev) {
 
 function touchEnd (ev) {
 
-  // If scrolling or no start, stop
-  if (scrolling || startCoor==null || currCoor==null) {
+  // If scrolling
+  if (scrolling) {
     return;
   }
   
-  if (cellMoving != null)
-  {
+  // Poss to do start without move
+  if (cellMoving != null) {
     cellMoving.style.zIndex = cellOriginalZIndex;
+  }
+  
+  // If no start, stop
+  if (startCoor==null || currCoor==null) {
+    return;
+  }
+  
+  if (cellMoving != null) {
     
     // Check if in board
     var moving=false;
@@ -475,6 +483,9 @@ function startNewGame() {
   board.addEventListener('touchstart', touchStart, false);
   board.addEventListener('touchmove', touchMove, false);
   board.addEventListener('touchend', touchEnd, false);
+  startCoor=null;
+  currCoor=null;
+  cellMoving=null;
   // Reset selected
   g_selectedCol=-1;
   g_selectedRow=-1;
