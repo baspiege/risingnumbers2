@@ -5,98 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
 <title>Mod 10</title>
 <style type="text/css">
-table.board {text-align:center;font-size:300%;font-weight:bold;border:1px solid black;}
-table.board td {width:1em;padding:5px;border:1px solid black;}
-td.c1 {background-color: #ff0000; color: #ffffff;}
-td.c2 {background-color: #00ff00; color: #ffffff;}
-td.c3 {background-color: #0000ff; color: #ffffff;}
-td.c4 {background-color: #ff00ff; color: #000000;}
-td.c0 {background-color: #00ffff; color: #000000;}
-td.goal {background-color: #c0c0c0; color: #000000 ;
-   transition: background-color .5s;
-  -moz-transition: background-color 1s; /* Firefox 4 */
-  -webkit-transition: background-color 1s; /* Safari and Chrome */
-  -o-transition: background-color 1s; /* Opera */
-}
-td.highlight {background-color: #ffff00; color: #000000 ;}
-td.highlightGoal { background-color: #ffff00; color: #000000 ;
-  animation:animateCell .5s;
-  -webkit-animation:animateCell .5s; /*Safari and Chrome */
-}
-
-@keyframes animateCell
-{
-0% {
-transform: rotate(0deg);
--ms-transform: rotate(0deg); /* IE 9 */
--webkit-transform: rotate(0deg); /* Safari and Chrome */
--o-transform: rotate(0deg); /* Opera */
--moz-transform: rotate(0deg); /* Firefox */
-}
-25% {
-transform: rotate(90deg);
--ms-transform: rotate(90deg); /* IE 9 */
--webkit-transform: rotate(90deg); /* Safari and Chrome */
--o-transform: rotate(90deg); /* Opera */
--moz-transform: rotate(90deg); /* Firefox */
-}
-50% {
-transform: rotate(180deg);
--ms-transform: rotate(1800deg); /* IE 9 */
--webkit-transform: rotate(180deg); /* Safari and Chrome */
--o-transform: rotate(180deg); /* Opera */
--moz-transform: rotate(180deg); /* Firefox */
-}
-75% {
-transform: rotate(270deg);
--ms-transform: rotate(270deg); /* IE 9 */
--webkit-transform: rotate(270deg); /* Safari and Chrome */
--o-transform: rotate(270deg); /* Opera */
--moz-transform: rotate(270deg); /* Firefox */}
-100% {
-transform: rotate(360deg);
--ms-transform: rotate(360deg); /* IE 9 */
--webkit-transform: rotate(360deg); /* Safari and Chrome */
--o-transform: rotate(360deg); /* Opera */
--moz-transform: rotate(360deg); /* Firefox */}
-}
-
-@-webkit-keyframes animateCell /*Safari and Chrome */
-{
-0% { 
-transform: rotate(0deg);
--ms-transform: rotate(0deg); /* IE 9 */
--webkit-transform: rotate(0deg); /* Safari and Chrome */
--o-transform: rotate(0deg); /* Opera */
--moz-transform: rotate(0deg); /* Firefox */
-}
-25% {
-transform: rotate(90deg);
--ms-transform: rotate(90deg); /* IE 9 */
--webkit-transform: rotate(90deg); /* Safari and Chrome */
--o-transform: rotate(90deg); /* Opera */
--moz-transform: rotate(90deg); /* Firefox */
-}
-50% {
-transform: rotate(180deg);
--ms-transform: rotate(1800deg); /* IE 9 */
--webkit-transform: rotate(180deg); /* Safari and Chrome */
--o-transform: rotate(180deg); /* Opera */
--moz-transform: rotate(180deg); /* Firefox */
-}
-75% {
-transform: rotate(270deg);
--ms-transform: rotate(270deg); /* IE 9 */
--webkit-transform: rotate(270deg); /* Safari and Chrome */
--o-transform: rotate(270deg); /* Opera */
--moz-transform: rotate(270deg); /* Firefox */}
-100% {
-transform: rotate(360deg);
--ms-transform: rotate(360deg); /* IE 9 */
--webkit-transform: rotate(360deg); /* Safari and Chrome */
--o-transform: rotate(360deg); /* Opera */
--moz-transform: rotate(360deg); /* Firefox */}
-}
+table.board {text-align:center;font-size:400%;font-weight:bold;border:1px solid black;}
+table.board td {width:1em;border:1px solid black;}
+.c1 {background-color: #ff0000; color: #ffffff;}
+.c2 {background-color: #00ff00; color: #ffffff;}
+.c3 {background-color: #0000ff; color: #ffffff;}
+.c4 {background-color: #ff00ff; color: #000000;}
+.c0 {background-color: #00ffff; color: #000000;}
+.goal {background-color: #c0c0c0; color: #000000;}
+.highlight {background-color: #ffffff; color: #000000;}
+.highlightGoal { background-color: #ffff00; color: #000000;}
 
 </style>
 
@@ -106,9 +24,9 @@ transform: rotate(360deg);
 // Best times
 // Time component
 
-////////////////////////////////////////
+//////////
 // Global vars
-////////////////////////////////////////
+//////////
 
 var g_board;
 var g_maxRow=0;
@@ -118,9 +36,9 @@ var g_rowGoals;
 var g_selectedCol=-1;
 var g_selectedRow=-1;
 
-////////////////////////////////////////
+//////////
 // Utilities
-////////////////////////////////////////
+//////////
 
 // Array contains element
 Array.prototype.contains= function (element) {
@@ -221,9 +139,9 @@ function checkGameOver() {
   }
 }
 
-////////////////////////////////////////
+//////////
 // Action
-////////////////////////////////////////
+//////////
 
 // Select cell
 function selectCell(col,row)
@@ -255,9 +173,9 @@ function selectCell(col,row)
   }
 }
 
-////////////////////////////////////////
+//////////
 // Set-up
-////////////////////////////////////////
+//////////
 
 // Create board
 function createBoard() {
@@ -295,9 +213,9 @@ function createBoard() {
   }
 }
 
-////////////////////////////////////////
+//////////
 // Display
-////////////////////////////////////////
+//////////
 
 // Create board display
 function createBoardDisplay() {
@@ -306,11 +224,11 @@ function createBoardDisplay() {
     display+="<tr>";
     for (var j=0; j<g_maxCol; j++) {
       var number=g_board[j][i];
-      display+="<td id=\"" + j + "," + i + "\" class=\"";
-      display+="c" + number%5 + "\" ";  // Color
+      display+="<td id=\"" + j + "," + i + "\"";
       display+="onclick=\"selectCell(" + j + "," + i + ")\">";
+      display+="<div class=\"c" + number%5 + "\">";
       display+=number;
-      display+="</td>";
+      display+="</div></td>";
     }
     // Row goals
     display+="<td id=\"rg" + i + "\" class=\"goal\">";
@@ -335,15 +253,22 @@ function updateBoard() {
   document.getElementById("board").innerHTML=createBoardDisplay();
 }
 
+// Update debug
+function updateDebug(message) {
+  document.getElementById("debug").innerHTML=message;
+}
+
 // Update cell
 function updateCell(col,row,highlight) {
-  var cell=document.getElementById( col + "," + row);
-  cell.innerHTML=g_board[col][row];
+  var number=g_board[col][row];
+  var className;
   if (highlight==true) {
-    cell.className="highlight";
+    className="highlight";
   } else {
-    cell.className="c" + g_board[col][row]%5;
+    className="c" + number%5;
   }
+  var cell=document.getElementById( col + "," + row);  
+  cell.innerHTML="<div class=\"" + className + "\">" + number + "</div>";
 }
 
 // Update row goal
@@ -366,11 +291,190 @@ function updateColGoal(col,highlight) {
   }
 }
 
-////////////////////////////////////////
+//////////
+// Movement
+//////////
+
+var startCoor=null;
+var currCoor=null;
+var scrolling=false;
+var cellMoving=null;
+var cellOffset=null;
+var cellOriginalZIndex=0;
+
+// Coordinates for touch movement
+function Coordinates(x, y) {
+  this.x=x;
+  this.y=y;
+}
+
+// Get coordinates from a touch event
+function getCoordinates(ev) {
+  var x;
+  var y;
+  if (ev.touches && ev.touches.length) { // Multi touch
+    x = ev.touches[0].clientX;
+    y = ev.touches[0].clientY;
+  } else { // Single touch
+    x = e.clientX;
+    y = e.clientY;
+  }
+
+  return new Coordinates(x, y);
+}
+
+function touchMove(ev) {
+
+  // If scrolling or no start, stop
+  if (scrolling || startCoor==null || cellMoving==null) {
+    return;
+  }
+  
+  currCoor=getCoordinates(ev);
+  cellMoving.style.left = (cellOffset.x + currCoor.x - startCoor.x) + 'px';
+  cellMoving.style.top = (cellOffset.y + currCoor.y - startCoor.y) + 'px';
+}
+
+function touchEnd (ev) {
+
+  // If scrolling or no start, stop
+  if (scrolling || startCoor==null || currCoor==null) {
+    return;
+  }
+  
+  if (cellMoving != null)
+  {
+    cellMoving.style.zIndex = cellOriginalZIndex;
+    
+    // Check if in board
+    var moving=false;
+    var rows=document.getElementById("board").getElementsByTagName("tr");
+    for (var i=0;i<(rows.length-1);i++){
+      if (checkInElement(rows[i], currCoor.x, currCoor.y)){
+        // Check if in cell.
+        var cols=rows[i].getElementsByTagName("td");
+        for (var j=0;j<(cols.length-1);j++){
+          if (checkInElement(cols[j], currCoor.x, currCoor.y)){
+            moving=true;
+
+            // Get location
+            var id=cols[j].getAttribute('id');
+            var itemParts=id.split(",");
+            var col=extractNumber(itemParts[0]);
+            var row=extractNumber(itemParts[1]);
+    
+            // Switch numbers
+            var selectedNumber=g_board[g_selectedCol][g_selectedRow];
+            g_board[g_selectedCol][g_selectedRow]=g_board[col][row];
+            g_board[col][row]=selectedNumber;
+            
+            // Update display
+            updateCell(g_selectedCol,g_selectedRow,false);
+            updateCell(col,row,false);
+            
+            cellMoving.style.position = "static";
+            cellMoving.style.left = 0;
+            cellMoving.style.top = 0;
+            
+            startCoor=null;
+            currCoor=null;
+            cellMoving=null;
+            
+            // Deselect for next
+            g_selectedCol=-1;
+            g_selectedRow=-1;
+            checkGameOver();
+          }
+        }
+      }
+    }
+
+    // Revert back.
+    if (!moving) {
+      cellMoving.style.position = "static";
+      cellMoving.style.left = 0;
+      cellMoving.style.top = 0;
+    }
+
+    cellMoving = null;
+  }
+}
+
+function touchStart(ev) {
+
+  // Check for scrolling.
+  var verticalScrolling=document.documentElement.clientHeight<(document.body.offsetHeight);
+  var horizontalScrolling=document.documentElement.clientWidth<(document.body.offsetWidth); 
+  scrolling=verticalScrolling || horizontalScrolling;
+  if (scrolling) {
+    return;
+  }
+  
+  var target=ev.target;
+  
+  // Only move board piece (not goals)
+  if (target.className && target.className.indexOf("c")!=-1) {
+    
+    startCoor=getCoordinates(ev);      
+    target.style.position = "relative";
+
+    var id=target.parentNode.getAttribute('id');
+    var itemParts=id.split(",");
+    g_selectedCol=extractNumber(itemParts[0]);
+    g_selectedRow=extractNumber(itemParts[1]);
+    
+    // Get target's position
+    cellOffset=new Coordinates(extractNumber(target.style.left), extractNumber(target.style.top));
+    
+    // Bring to front
+    cellOriginalZIndex = target.style.zIndex;
+    target.style.zIndex = 10000;
+
+    // Element to move
+    cellMoving = target;
+    ev.preventDefault();
+  }
+}
+
+function extractNumber(value) {
+  var n = parseInt(value);
+  return n == null || isNaN(n) ? 0 : n;
+}
+
+function findPos(obj) {
+  var left=0;
+  var top=0;
+  if (obj.offsetParent) {
+    do {
+      left += obj.offsetLeft;
+      top += obj.offsetTop;
+    } while (obj = obj.offsetParent);
+  }
+  return new Coordinates(left,top);
+}
+
+function checkInElement(element, posX, posY) {
+  var coor = findPos(element);
+  var targPosX = coor.x;
+  var targPosY = coor.y;
+  var targWidth = extractNumber(element.offsetWidth);
+  var targHeight = extractNumber(element.offsetHeight);
+  if ((posX > targPosX) && (posX < (targPosX + targWidth)) && (posY > targPosY) && (posY < (targPosY + targHeight))) {
+      return true;
+  }
+  return false;
+}
+
+//////////
 // Main
-////////////////////////////////////////
+//////////
 
 function startNewGame() {
+  // Set touch events
+  var board=document.getElementById("board");
+  board.addEventListener('touchstart', touchStart, false);
+  board.addEventListener('touchmove', touchMove, false);
+  board.addEventListener('touchend', touchEnd, false);
   // Reset selected
   g_selectedCol=-1;
   g_selectedRow=-1;
@@ -388,9 +492,9 @@ function startNewGame() {
 //]]></script>
 </head>
 <body onload="startNewGame();">
-  <p> G = (&#8721; n) % 10
-  </p>
+  <p> G = (&#8721; n) % 10</p>
   <div id="board"></div>
+  <div id="debug"></div>
   <!-- New Game -->
   <form action="">
     <p> Board Size
