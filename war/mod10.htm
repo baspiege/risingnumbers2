@@ -108,53 +108,30 @@ function shuffle(array) {
 // Board utilities
 //////////
 
-// Check cols
-function checkCols() {
-  var cols=new Array();
-  for (var i=0;i<g_maxCol;i++) {
-    if (getColTotalMod10(i)==g_colGoals[i]) {
-        cols.push(i);
-    }
-  }
-  return cols;
-}
-
 // Check game over
 // Also highlights goals
 function checkGameOver() {
-  var rowsAttained=checkRows();
-  var colsAttained=checkCols();
-  // Highlight rows
+  var allAttained=true;
   for (var i=0;i<g_maxRow;i++) {
-    if (rowsAttained.contains(i)) {
+    if ((getRowTotalMod10(i)==g_rowGoals[i])) {
       updateRowGoal(i,true);
     } else {
       updateRowGoal(i,false);
+      allAttained=false;
     }
   }
-  // Highlight cols
   for (var i=0;i<g_maxCol;i++) {
-    if (colsAttained.contains(i)) {
+    if (getColTotalMod10(i)==g_colGoals[i]) {
       updateColGoal(i,true);
     } else {
       updateColGoal(i,false);
+      allAttained=false;
     }
   }
   // If all attained
-  if (rowsAttained.length==g_maxRow && colsAttained.length==g_maxCol) {
+  if (allAttained) {
     alert("Done!");
   }
-}
-
-// Check rows
-function checkRows() {
-  var rows=new Array();
-  for (var i=0;i<g_maxRow;i++) {
-    if ((getRowTotalMod10(i)==g_rowGoals[i])) {
-      rows.push(i);
-    }
-  }
-  return rows;
 }
 
 // Get col total
@@ -304,11 +281,6 @@ function updateCell(col,row,highlight) {
   cell.innerHTML="<div class=\"" + className + "\">" + number + "</div>";
 }
 
-// Update debug
-function updateDebug(message) {
-  document.getElementById("debug").innerHTML=message;
-}
-
 // Update col goal
 function updateColGoal(col,highlight) {
   var goal=document.getElementById( "cg" + col);
@@ -317,6 +289,11 @@ function updateColGoal(col,highlight) {
   } else {
     goal.className="goal";
   }
+}
+
+// Update debug
+function updateDebug(message) {
+  document.getElementById("debug").innerHTML=message;
 }
 
 // Update row goal
