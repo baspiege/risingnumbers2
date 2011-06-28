@@ -156,7 +156,7 @@ function selectCell(col,row)
   else if (g_selectedCol==col && g_selectedRow==row) {
     g_selectedCol=-1;
     g_selectedRow=-1;
-    updateCell(col,row,false); // Highlight selected
+    updateCell(col,row,false);
   }
   // Switch cells
   else {
@@ -325,7 +325,7 @@ function getCoordinates(ev) {
 
 function touchMove(ev) {
 
-  // If scrolling or no start, stop
+  // If scrolling or no start, return
   if (scrolling || startCoor==null || cellMoving==null) {
     return;
   }
@@ -337,18 +337,18 @@ function touchMove(ev) {
 
 function touchEnd (ev) {
 
-  // If scrolling
+  // If scrolling, return
   if (scrolling) {
     return;
   }
   
-  // Poss to do start without move
+  // Possible to do start without move
   if (cellMoving != null) {
     cellMoving.style.zIndex = cellOriginalZIndex;
   }
   
-  // If no start, stop
-  if (startCoor==null || currCoor==null) {
+  // If no curr coordinates, return
+  if (currCoor==null) {
     return;
   }
   
@@ -372,26 +372,17 @@ function touchEnd (ev) {
             var row=extractNumber(itemParts[1]);
     
             // Switch numbers
-            var selectedNumber=g_board[g_selectedCol][g_selectedRow];
-            g_board[g_selectedCol][g_selectedRow]=g_board[col][row];
-            g_board[col][row]=selectedNumber;
+            selectCell(col,row)
             
-            // Update display
-            updateCell(g_selectedCol,g_selectedRow,false);
-            updateCell(col,row,false);
-            
+            // Reset position
             cellMoving.style.position = "static";
             cellMoving.style.left = 0;
             cellMoving.style.top = 0;
             
+            // Reset variables
             startCoor=null;
             currCoor=null;
             cellMoving=null;
-            
-            // Deselect for next
-            g_selectedCol=-1;
-            g_selectedRow=-1;
-            checkGameOver();
           }
         }
       }
@@ -426,6 +417,7 @@ function touchStart(ev) {
     startCoor=getCoordinates(ev);      
     target.style.position = "relative";
 
+    // Get selected col and row
     var id=target.parentNode.getAttribute('id');
     var itemParts=id.split(",");
     g_selectedCol=extractNumber(itemParts[0]);
