@@ -46,16 +46,6 @@ var cellOriginalZIndex=0;
 // Utilities
 //////////
 
-// Array contains element
-Array.prototype.contains= function (element) {
-  for (var i=0; i<this.length; i++) {
-    if (this[i]==element) {
-      return true;
-    }
-  }
-  return false;
-}
-
 function checkInElement(element, posX, posY) {
   var coor = findPos(element);
   var targPosX = coor.x;
@@ -327,27 +317,22 @@ function getCoordinates(ev) {
     x = e.clientX;
     y = e.clientY;
   }
-
   return new Coordinates(x, y);
 }
 
 function touchEnd (ev) {
-
   // If scrolling, return
   if (scrolling) {
     return;
   }
-
   // Possible to do start without move
   if (cellMoving != null) {
     cellMoving.style.zIndex = cellOriginalZIndex;
   }
-
   // If no curr coordinates, return
   if (currCoor==null) {
     return;
   }
-
   if (cellMoving != null) {
     // Check if in board
     var moving=false;
@@ -359,21 +344,17 @@ function touchEnd (ev) {
         for (var j=0;j<(cols.length-1);j++){
           if (checkInElement(cols[j], currCoor.x, currCoor.y)){
             moving=true;
-
             // Get location
             var id=cols[j].getAttribute('id');
             var itemParts=id.split(",");
             var col=extractNumber(itemParts[0]);
             var row=extractNumber(itemParts[1]);
-
             // Switch numbers
             selectCell(col,row)
-
             // Reset position
             cellMoving.style.position = "static";
             cellMoving.style.left = 0;
             cellMoving.style.top = 0;
-
             // Reset variables
             startCoor=null;
             currCoor=null;
@@ -382,32 +363,27 @@ function touchEnd (ev) {
         }
       }
     }
-
     // Revert back.
     if (!moving) {
       cellMoving.style.position = "static";
       cellMoving.style.left = 0;
       cellMoving.style.top = 0;
     }
-
     cellMoving = null;
   }
 }
 
 function touchMove(ev) {
-
   // If scrolling or no start, return
   if (scrolling || startCoor==null || cellMoving==null) {
     return;
   }
-
   currCoor=getCoordinates(ev);
   cellMoving.style.left = (currCoor.x - startCoor.x) + 'px';
   cellMoving.style.top = (currCoor.y - startCoor.y) + 'px';
 }
 
 function touchStart(ev) {
-
   // Check for scrolling.
   var verticalScrolling=document.documentElement.clientHeight<(document.body.offsetHeight);
   var horizontalScrolling=document.documentElement.clientWidth<(document.body.offsetWidth);
@@ -415,25 +391,19 @@ function touchStart(ev) {
   if (scrolling) {
     return;
   }
-
   var target=ev.target;
-
   // Only move board piece (not goals)
   if (target.className && target.className.indexOf("c")!=-1) {
-
     startCoor=getCoordinates(ev);
     target.style.position = "relative";
-
     // Get selected col and row
     var id=target.parentNode.getAttribute('id');
     var itemParts=id.split(",");
     g_selectedCol=extractNumber(itemParts[0]);
     g_selectedRow=extractNumber(itemParts[1]);
-
     // Bring to front
     cellOriginalZIndex = target.style.zIndex;
     target.style.zIndex = 10000;
-
     // Element to move
     cellMoving = target;
     ev.preventDefault();
