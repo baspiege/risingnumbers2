@@ -15,7 +15,6 @@ table.board td {width:1em;border:1px solid black;}
 .goal {background-color: #c0c0c0; color: #000000;}
 .highlight {background-color: #ffffff; color: #000000;}
 .highlightGoal { background-color: #ffff00; color: #000000;}
-
 </style>
 
 <script type="text/javascript">//<![CDATA[
@@ -36,6 +35,13 @@ var g_rowGoals;
 var g_selectedCol=-1;
 var g_selectedRow=-1;
 
+// Touch variables
+var startCoor=null;
+var currCoor=null;
+var scrolling=false;
+var cellMoving=null;
+var cellOriginalZIndex=0;
+
 //////////
 // Utilities
 //////////
@@ -50,7 +56,40 @@ Array.prototype.contains= function (element) {
   return false;
 }
 
-// Shuffle
+function checkInElement(element, posX, posY) {
+  var coor = findPos(element);
+  var targPosX = coor.x;
+  var targPosY = coor.y;
+  var targWidth = extractNumber(element.offsetWidth);
+  var targHeight = extractNumber(element.offsetHeight);
+  if ((posX > targPosX) && (posX < (targPosX + targWidth)) && (posY > targPosY) && (posY < (targPosY + targHeight))) {
+      return true;
+  }
+  return false;
+}
+
+// Create random number. 0 to max.
+function createRandomNumber(max) {
+  return Math.round( Math.random()*max );
+}
+
+function extractNumber(value) {
+  var n = parseInt(value);
+  return n == null || isNaN(n) ? 0 : n;
+}
+
+function findPos(obj) {
+  var left=0;
+  var top=0;
+  if (obj.offsetParent) {
+    do {
+      left += obj.offsetLeft;
+      top += obj.offsetTop;
+    } while (obj = obj.offsetParent);
+  }
+  return new Coordinates(left,top);
+}
+
 function shuffle(array) {
   var i = array.length;
   if (i==0) {
@@ -65,41 +104,9 @@ function shuffle(array) {
   }
 }
 
-// Create random number. 0 to max.
-function createRandomNumber(max) {
-  return Math.round( Math.random()*max );
-}
-
-// Get row total
-function getRowTotalMod10(row) {
-  var rowCount=0;
-  for (var i=0;i<g_maxCol;i++) {
-    var num=g_board[i][row];
-    rowCount+=num;
-  }
-  return rowCount%10;
-}
-
-// Check rows
-function checkRows() {
-  var rows=new Array();
-  for (var i=0;i<g_maxRow;i++) {
-    if ((getRowTotalMod10(i)==g_rowGoals[i])) {
-      rows.push(i);
-    }
-  }
-  return rows;
-}
-
-// Get col total
-function getColTotalMod10(col) {
-  var colCount=0;
-  for (var i=0;i<g_maxRow;i++) {
-    var num=g_board[col][i];
-    colCount+=num;
-  }
-  return colCount%10;
-}
+//////////
+// Board utilities
+//////////
 
 // Check cols
 function checkCols() {
@@ -137,6 +144,37 @@ function checkGameOver() {
   if (rowsAttained.length==g_maxRow && colsAttained.length==g_maxCol) {
     alert("Done!");
   }
+}
+
+// Check rows
+function checkRows() {
+  var rows=new Array();
+  for (var i=0;i<g_maxRow;i++) {
+    if ((getRowTotalMod10(i)==g_rowGoals[i])) {
+      rows.push(i);
+    }
+  }
+  return rows;
+}
+
+// Get col total
+function getColTotalMod10(col) {
+  var colCount=0;
+  for (var i=0;i<g_maxRow;i++) {
+    var num=g_board[col][i];
+    colCount+=num;
+  }
+  return colCount%10;
+}
+
+// Get row total
+function getRowTotalMod10(row) {
+  var rowCount=0;
+  for (var i=0;i<g_maxCol;i++) {
+    var num=g_board[i][row];
+    rowCount+=num;
+  }
+  return rowCount%10;
 }
 
 //////////
@@ -253,11 +291,6 @@ function updateBoard() {
   document.getElementById("board").innerHTML=createBoardDisplay();
 }
 
-// Update debug
-function updateDebug(message) {
-  document.getElementById("debug").innerHTML=message;
-}
-
 // Update cell
 function updateCell(col,row,highlight) {
   var number=g_board[col][row];
@@ -267,18 +300,13 @@ function updateCell(col,row,highlight) {
   } else {
     className="c" + number%5;
   }
-  var cell=document.getElementById( col + "," + row);  
+  var cell=document.getElementById( col + "," + row);
   cell.innerHTML="<div class=\"" + className + "\">" + number + "</div>";
 }
 
-// Update row goal
-function updateRowGoal(row,highlight) {
-  var goal=document.getElementById( "rg" + row);
-  if (highlight) {
-    goal.className="highlightGoal";
-  } else {
-    goal.className="goal";
-  }
+// Update debug
+function updateDebug(message) {
+  document.getElementById("debug").innerHTML=message;
 }
 
 // Update col goal
@@ -291,16 +319,19 @@ function updateColGoal(col,highlight) {
   }
 }
 
-//////////
-// Movement
-//////////
+// Update row goal
+function updateRowGoal(row,highlight) {
+  var goal=document.getElementById( "rg" + row);
+  if (highlight) {
+    goal.className="highlightGoal";
+  } else {
+    goal.className="goal";
+  }
+}
 
-var startCoor=null;
-var currCoor=null;
-var scrolling=false;
-var cellMoving=null;
-var cellOffset=null;
-var cellOriginalZIndex=0;
+//////////
+// Touch movement
+//////////
 
 // Coordinates for touch movement
 function Coordinates(x, y) {
@@ -323,37 +354,24 @@ function getCoordinates(ev) {
   return new Coordinates(x, y);
 }
 
-function touchMove(ev) {
-
-  // If scrolling or no start, return
-  if (scrolling || startCoor==null || cellMoving==null) {
-    return;
-  }
-  
-  currCoor=getCoordinates(ev);
-  cellMoving.style.left = (cellOffset.x + currCoor.x - startCoor.x) + 'px';
-  cellMoving.style.top = (cellOffset.y + currCoor.y - startCoor.y) + 'px';
-}
-
 function touchEnd (ev) {
 
   // If scrolling, return
   if (scrolling) {
     return;
   }
-  
+
   // Possible to do start without move
   if (cellMoving != null) {
     cellMoving.style.zIndex = cellOriginalZIndex;
   }
-  
+
   // If no curr coordinates, return
   if (currCoor==null) {
     return;
   }
-  
+
   if (cellMoving != null) {
-    
     // Check if in board
     var moving=false;
     var rows=document.getElementById("board").getElementsByTagName("tr");
@@ -370,15 +388,15 @@ function touchEnd (ev) {
             var itemParts=id.split(",");
             var col=extractNumber(itemParts[0]);
             var row=extractNumber(itemParts[1]);
-    
+
             // Switch numbers
             selectCell(col,row)
-            
+
             // Reset position
             cellMoving.style.position = "static";
             cellMoving.style.left = 0;
             cellMoving.style.top = 0;
-            
+
             // Reset variables
             startCoor=null;
             currCoor=null;
@@ -399,22 +417,34 @@ function touchEnd (ev) {
   }
 }
 
+function touchMove(ev) {
+
+  // If scrolling or no start, return
+  if (scrolling || startCoor==null || cellMoving==null) {
+    return;
+  }
+
+  currCoor=getCoordinates(ev);
+  cellMoving.style.left = (currCoor.x - startCoor.x) + 'px';
+  cellMoving.style.top = (currCoor.y - startCoor.y) + 'px';
+}
+
 function touchStart(ev) {
 
   // Check for scrolling.
   var verticalScrolling=document.documentElement.clientHeight<(document.body.offsetHeight);
-  var horizontalScrolling=document.documentElement.clientWidth<(document.body.offsetWidth); 
+  var horizontalScrolling=document.documentElement.clientWidth<(document.body.offsetWidth);
   scrolling=verticalScrolling || horizontalScrolling;
   if (scrolling) {
     return;
   }
-  
+
   var target=ev.target;
-  
+
   // Only move board piece (not goals)
   if (target.className && target.className.indexOf("c")!=-1) {
-    
-    startCoor=getCoordinates(ev);      
+
+    startCoor=getCoordinates(ev);
     target.style.position = "relative";
 
     // Get selected col and row
@@ -422,10 +452,7 @@ function touchStart(ev) {
     var itemParts=id.split(",");
     g_selectedCol=extractNumber(itemParts[0]);
     g_selectedRow=extractNumber(itemParts[1]);
-    
-    // Get target's position
-    cellOffset=new Coordinates(extractNumber(target.style.left), extractNumber(target.style.top));
-    
+
     // Bring to front
     cellOriginalZIndex = target.style.zIndex;
     target.style.zIndex = 10000;
@@ -434,35 +461,6 @@ function touchStart(ev) {
     cellMoving = target;
     ev.preventDefault();
   }
-}
-
-function extractNumber(value) {
-  var n = parseInt(value);
-  return n == null || isNaN(n) ? 0 : n;
-}
-
-function findPos(obj) {
-  var left=0;
-  var top=0;
-  if (obj.offsetParent) {
-    do {
-      left += obj.offsetLeft;
-      top += obj.offsetTop;
-    } while (obj = obj.offsetParent);
-  }
-  return new Coordinates(left,top);
-}
-
-function checkInElement(element, posX, posY) {
-  var coor = findPos(element);
-  var targPosX = coor.x;
-  var targPosY = coor.y;
-  var targWidth = extractNumber(element.offsetWidth);
-  var targHeight = extractNumber(element.offsetHeight);
-  if ((posX > targPosX) && (posX < (targPosX + targWidth)) && (posY > targPosY) && (posY < (targPosY + targHeight))) {
-      return true;
-  }
-  return false;
 }
 
 //////////
