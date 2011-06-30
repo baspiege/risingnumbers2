@@ -445,6 +445,12 @@ function mouseY(evt) {
 }
 
 function onMouseDown(e) {
+  // If touch events are used and page scrolled, skip mouse events.  onclick will be used.
+  // scrolling is only set in touch events.
+  if (scrolling) {
+    return false;
+  }
+
   // Set event for IE
   if (e == null) {
     e = window.event;
@@ -484,6 +490,12 @@ function onMouseDown(e) {
 }
 
 function onMouseMove(e) {
+  // If touch events are used and page scrolled, skip mouse events.  onclick will be used.
+  // scrolling is only set in touch events.
+  if (scrolling) {
+    return false;
+  }
+
   if (e == null) {
     e = window.event;
   }
@@ -494,6 +506,12 @@ function onMouseMove(e) {
 }
 
 function onMouseUp(e) {
+  // If touch events are used and page scrolled, skip mouse events.  onclick will be used.
+  // scrolling is only set in touch events.
+  if (scrolling) {
+    return false;
+  }
+
   if (cellMoving != null) {
     cellMoving.style.zIndex = cellOriginalZIndex;
     // Set event for IE
