@@ -46,18 +46,6 @@ var cellOriginalZIndex=0;
 // Utilities
 //////////
 
-function checkInElement(element, posX, posY) {
-  var coor = findPos(element);
-  var targPosX = coor.x;
-  var targPosY = coor.y;
-  var targWidth = extractNumber(element.offsetWidth);
-  var targHeight = extractNumber(element.offsetHeight);
-  if ((posX > targPosX) && (posX < (targPosX + targWidth)) && (posY > targPosY) && (posY < (targPosY + targHeight))) {
-      return true;
-  }
-  return false;
-}
-
 // Create random number. 0 to max.
 function createRandomNumber(max) {
   return Math.round( Math.random()*max );
@@ -66,18 +54,6 @@ function createRandomNumber(max) {
 function extractNumber(value) {
   var n = parseInt(value);
   return n == null || isNaN(n) ? 0 : n;
-}
-
-function findPos(obj) {
-  var left=0;
-  var top=0;
-  if (obj.offsetParent) {
-    do {
-      left += obj.offsetLeft;
-      top += obj.offsetTop;
-    } while (obj = obj.offsetParent);
-  }
-  return new Coordinates(left,top);
 }
 
 function shuffle(array) {
@@ -103,7 +79,7 @@ function shuffle(array) {
 function checkGameOver() {
   var allAttained=true;
   for (var i=0;i<g_maxRow;i++) {
-    if ((getRowTotalMod10(i)==g_rowGoals[i])) {
+    if (getRowTotalMod10(i)==g_rowGoals[i]) {
       updateRowGoal(i,true);
     } else {
       updateRowGoal(i,false);
@@ -297,14 +273,82 @@ function updateRowGoal(row,highlight) {
 }
 
 //////////
-// Touch movement
+// Movement Utilties
 //////////
 
-// Coordinates for touch movement
+// Uses global variables startCoor, currCoor, and cellMoving
+function checkCellInBoard() {
+  var moving=false;
+  // Check if in board
+  var moving=false;
+  var rows=document.getElementById("board").getElementsByTagName("tr");
+  for (var i=0;i<(rows.length-1);i++){
+    if (checkInElement(rows[i], currCoor.x, currCoor.y)){
+      // Check if in cell.
+      var cols=rows[i].getElementsByTagName("td");
+      for (var j=0;j<(cols.length-1);j++){
+        if (checkInElement(cols[j], currCoor.x, currCoor.y)){
+          moving=true;
+          // Get location
+          var id=cols[j].getAttribute('id');
+          var itemParts=id.split(",");
+          var col=extractNumber(itemParts[0]);
+          var row=extractNumber(itemParts[1]);
+          // Switch numbers
+          selectCell(col,row)
+          // Reset position
+          cellMoving.style.position = "static";
+          cellMoving.style.left = 0;
+          cellMoving.style.top = 0;
+          // Reset variables
+          startCoor=null;
+          currCoor=null;
+          return;
+        }
+      }
+    }
+  }
+  // Revert back.
+  if (!moving) {
+    cellMoving.style.position = "static";
+    cellMoving.style.left = 0;
+    cellMoving.style.top = 0;
+  }
+}
+
+function checkInElement(element, posX, posY) {
+  var coor = findPos(element);
+  var targPosX = coor.x;
+  var targPosY = coor.y;
+  var targWidth = extractNumber(element.offsetWidth);
+  var targHeight = extractNumber(element.offsetHeight);
+  if ((posX > targPosX) && (posX < (targPosX + targWidth)) && (posY > targPosY) && (posY < (targPosY + targHeight))) {
+      return true;
+  }
+  return false;
+}
+
+// Coordinates for movement
 function Coordinates(x, y) {
   this.x=x;
   this.y=y;
 }
+
+function findPos(obj) {
+  var left=0;
+  var top=0;
+  if (obj.offsetParent) {
+    do {
+      left += obj.offsetLeft;
+      top += obj.offsetTop;
+    } while (obj = obj.offsetParent);
+  }
+  return new Coordinates(left,top);
+}
+
+//////////
+// Touch movement
+//////////
 
 // Get coordinates from a touch event
 function getCoordinates(ev) {
@@ -334,41 +378,7 @@ function touchEnd (ev) {
     return;
   }
   if (cellMoving != null) {
-    // Check if in board
-    var moving=false;
-    var rows=document.getElementById("board").getElementsByTagName("tr");
-    for (var i=0;i<(rows.length-1);i++){
-      if (checkInElement(rows[i], currCoor.x, currCoor.y)){
-        // Check if in cell.
-        var cols=rows[i].getElementsByTagName("td");
-        for (var j=0;j<(cols.length-1);j++){
-          if (checkInElement(cols[j], currCoor.x, currCoor.y)){
-            moving=true;
-            // Get location
-            var id=cols[j].getAttribute('id');
-            var itemParts=id.split(",");
-            var col=extractNumber(itemParts[0]);
-            var row=extractNumber(itemParts[1]);
-            // Switch numbers
-            selectCell(col,row)
-            // Reset position
-            cellMoving.style.position = "static";
-            cellMoving.style.left = 0;
-            cellMoving.style.top = 0;
-            // Reset variables
-            startCoor=null;
-            currCoor=null;
-            cellMoving=null;
-          }
-        }
-      }
-    }
-    // Revert back.
-    if (!moving) {
-      cellMoving.style.position = "static";
-      cellMoving.style.left = 0;
-      cellMoving.style.top = 0;
-    }
+    checkCellInBoard();
     cellMoving = null;
   }
 }
@@ -411,15 +421,119 @@ function touchStart(ev) {
 }
 
 //////////
+// Mouse movement
+//////////
+
+function mouseX(evt) {
+  if (evt.pageX) {
+    return evt.pageX;
+  }
+  else if (evt.clientX) {
+    return evt.clientX + scrollX();
+  }
+  else return null;
+}
+
+function mouseY(evt) {
+  if (evt.pageY) {
+    return evt.pageY;
+  }
+  else if (evt.clientY) {
+    return evt.clientY + scrollY();
+  }
+  else return null;
+}
+
+function onMouseDown(e) {
+  // Set event for IE
+  if (e == null) {
+    e = window.event;
+  }
+  // IE uses srcElement, others use target
+  var target = e.target != null ? e.target : e.srcElement;
+  // For IE, left click == 1. For Firefox, left click == 0
+  if ((e.button == 1 && window.event != null || e.button == 0) && target.className && target.className.indexOf("c")!=-1) {
+    target.style.position = "relative";
+    // Get selected col and row
+    var id=target.parentNode.getAttribute('id');
+    var itemParts=id.split(",");
+    g_selectedCol=extractNumber(itemParts[0]);
+    g_selectedRow=extractNumber(itemParts[1]);
+    // Grab the mouse position
+    startCoor = new Coordinates(e.clientX, e.clientY);
+    // Bring the clicked element to the front while it is being dragged
+    cellOriginalZIndex = target.style.zIndex;
+    target.style.zIndex = 10000;
+    // For access the element in onMouseMove
+    cellMoving = target;
+    // Start moving the element with the mouse
+    document.onmousemove = onMouseMove;
+    // Cancel out any text selections
+    document.body.focus();
+    // Prevent text selection in IE
+    document.onselectstart = function () {
+      return false;
+    };
+    // Prevent IE from trying to drag an image
+    target.ondragstart = function () {
+      return false;
+    };
+    // Prevent text selection (except IE)
+    return false;
+  }
+}
+
+function onMouseMove(e) {
+  if (e == null) {
+    e = window.event;
+  }
+  if (startCoor!=null && cellMoving!=null) {
+    cellMoving.style.left = (e.clientX - startCoor.x) + 'px';
+    cellMoving.style.top = (e.clientY - startCoor.y) + 'px';
+  }
+}
+
+function onMouseUp(e) {
+  if (cellMoving != null) {
+    cellMoving.style.zIndex = cellOriginalZIndex;
+    // Set event for IE
+    if (e == null){
+      var e = window.event;
+    }
+    currCoor=new Coordinates(mouseX(e), mouseY(e));
+    checkCellInBoard();
+    // Reset events until next onmousedown
+    document.onmousemove = null;
+    document.onselectstart = null;
+    cellMoving.ondragstart = null;
+    cellMoving = null;
+  }
+}
+
+function scrollX() {
+  return document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft;
+}
+
+function scrollY() {
+  return document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop;
+}
+
+//////////
 // Main
 //////////
 
-function startNewGame() {
-  // Set touch events
+function initGame() {
+  // Touch events
   var board=document.getElementById("board");
   board.addEventListener('touchstart', touchStart, false);
   board.addEventListener('touchmove', touchMove, false);
   board.addEventListener('touchend', touchEnd, false);
+  // Mouse events
+  document.onmousedown = onMouseDown;
+  document.onmouseup = onMouseUp;
+}
+
+function startNewGame() {
   startCoor=null;
   currCoor=null;
   cellMoving=null;
@@ -439,7 +553,7 @@ function startNewGame() {
 
 //]]></script>
 </head>
-<body onload="startNewGame();">
+<body onload="initGame();startNewGame();">
   <p> G = (&#8721; n) % 10</p>
   <div id="board"></div>
   <div id="debug"></div>
