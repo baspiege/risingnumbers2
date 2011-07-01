@@ -187,7 +187,7 @@ function createBoard() {
   shuffle(numbers);
   shuffle(numbers);
   // Put back
-  for (var j=g_maxRow-1; j>-1 ; j--) {
+  for (var j=0; j<g_maxRow; j++) {
     for (var i=0;i<g_maxCol;i++) {
       g_board[i][j]= numbers.shift();
     }
@@ -201,7 +201,7 @@ function createBoard() {
 // Create board display
 function createBoardDisplay() {
   var display="<table class=\"board\">";
-  for (var i=g_maxRow-1; i>-1 ; i--) {
+  for (var i=0; i<g_maxRow ; i++) {
     display+="<tr>";
     for (var j=0; j<g_maxCol; j++) {
       var number=g_board[j][i];
