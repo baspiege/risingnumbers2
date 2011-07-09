@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
 <title>Mod 10</title>
 <style type="text/css">
-table.board {text-align:center;font-size:400%;font-weight:bold;border:1px solid black;}
-table.board td {width:1em;border:1px solid black;}
+.board {text-align:center;font-size:400%;font-weight:bold;border:1px solid black;}
+.board .times {line-height:2em;text-align:left;font-size:medium;font-weight:normal;}
+.board td {width:1em;border:1px solid black;}
 .c1 {background-color: #ff0000; color: #ffffff;}
 .c2 {background-color: #00ff00; color: #ffffff;}
 .c3 {background-color: #0000ff; color: #ffffff;}
@@ -20,20 +21,20 @@ table.board td {width:1em;border:1px solid black;}
 <script type="text/javascript">
 
 // FE
-// Best times
-// Time component
+// Best times (store in cookie by board size)
+// Change innerHTML to document node...
 
 //////////
 // Global vars
 //////////
 
-var g_board;
-var g_maxRow=0;
-var g_maxCol=0;
-var g_colGoals;
-var g_rowGoals;
-var g_selectedCol=-1;
-var g_selectedRow=-1;
+var board;
+var maxRow=0;
+var maxCol=0;
+var colGoals;
+var rowGoals;
+var selectedCol=-1;
+var selectedRow=-1;
 
 // Movement variables
 var startCoor=null;
@@ -41,6 +42,10 @@ var currCoor=null;
 var scrolling=false;
 var cellMoving=null;
 var cellOriginalZIndex=0;
+
+// Time
+var timeInterval=null;
+var startTime=0;
 
 //////////
 // Utilities
@@ -78,16 +83,16 @@ function shuffle(array) {
 // Also highlights goals
 function checkGameOver() {
   var allAttained=true;
-  for (var i=0;i<g_maxRow;i++) {
-    if (getRowTotalMod10(i)==g_rowGoals[i]) {
+  for (var i=0;i<maxRow;i++) {
+    if (getRowTotalMod10(i)==rowGoals[i]) {
       updateRowGoal(i,true);
     } else {
       updateRowGoal(i,false);
       allAttained=false;
     }
   }
-  for (var i=0;i<g_maxCol;i++) {
-    if (getColTotalMod10(i)==g_colGoals[i]) {
+  for (var i=0;i<maxCol;i++) {
+    if (getColTotalMod10(i)==colGoals[i]) {
       updateColGoal(i,true);
     } else {
       updateColGoal(i,false);
@@ -96,6 +101,7 @@ function checkGameOver() {
   }
   // If all attained
   if (allAttained) {
+    stopTimer();
     alert("Done!");
   }
 }
@@ -103,8 +109,8 @@ function checkGameOver() {
 // Get col total
 function getColTotalMod10(col) {
   var colCount=0;
-  for (var i=0;i<g_maxRow;i++) {
-    var num=g_board[col][i];
+  for (var i=0;i<maxRow;i++) {
+    var num=board[col][i];
     colCount+=num;
   }
   return colCount%10;
@@ -113,8 +119,8 @@ function getColTotalMod10(col) {
 // Get row total
 function getRowTotalMod10(row) {
   var rowCount=0;
-  for (var i=0;i<g_maxCol;i++) {
-    var num=g_board[i][row];
+  for (var i=0;i<maxCol;i++) {
+    var num=board[i][row];
     rowCount+=num;
   }
   return rowCount%10;
@@ -128,28 +134,28 @@ function getRowTotalMod10(row) {
 function selectCell(col,row)
 {
   // If no previous selected, select.
-  if (g_selectedCol==-1 && g_selectedRow==-1) {
-    g_selectedCol=col;
-    g_selectedRow=row;
+  if (selectedCol==-1 && selectedRow==-1) {
+    selectedCol=col;
+    selectedRow=row;
     updateCell(col,row,true); // Highlight selected
   }
   // If selected is same as previous, unselect.
-  else if (g_selectedCol==col && g_selectedRow==row) {
-    g_selectedCol=-1;
-    g_selectedRow=-1;
+  else if (selectedCol==col && selectedRow==row) {
+    selectedCol=-1;
+    selectedRow=-1;
     updateCell(col,row,false);
   }
   // Switch cells
   else {
-    var selectedNumber=g_board[g_selectedCol][g_selectedRow];
-    g_board[g_selectedCol][g_selectedRow]=g_board[col][row];
-    g_board[col][row]=selectedNumber;
+    var selectedNumber=board[selectedCol][selectedRow];
+    board[selectedCol][selectedRow]=board[col][row];
+    board[col][row]=selectedNumber;
     // Update display
-    updateCell(g_selectedCol,g_selectedRow,false);
+    updateCell(selectedCol,selectedRow,false);
     updateCell(col,row,false);
     // Deselect for next
-    g_selectedCol=-1;
-    g_selectedRow=-1;
+    selectedCol=-1;
+    selectedRow=-1;
     checkGameOver();
   }
 }
@@ -160,36 +166,36 @@ function selectCell(col,row)
 
 // Create board
 function createBoard() {
-  g_board=new Array(g_maxCol);
-  for (var i=0;i<g_maxCol;i++) {
-    g_board[i]=new Array();
-    for (var j=0;j<g_maxRow;j++) {
-      g_board[i].push( createRandomNumber(9) );
+  board=new Array(maxCol);
+  for (var i=0;i<maxCol;i++) {
+    board[i]=new Array();
+    for (var j=0;j<maxRow;j++) {
+      board[i].push( createRandomNumber(9) );
     }
   }
   // Col goals
-  g_colGoals=new Array();
-  for (var i=0;i<g_maxCol;i++) {
-    g_colGoals.push( getColTotalMod10(i) );
+  colGoals=new Array();
+  for (var i=0;i<maxCol;i++) {
+    colGoals.push( getColTotalMod10(i) );
   }
   // Row goals
-  g_rowGoals=new Array();
-  for (var i=0;i<g_maxRow;i++) {
-    g_rowGoals.push( getRowTotalMod10(i) );
+  rowGoals=new Array();
+  for (var i=0;i<maxRow;i++) {
+    rowGoals.push( getRowTotalMod10(i) );
   }
   // Put columns into one array and shuffle.
   var numbers=new Array();
-  for (var i=0;i<g_maxCol;i++) {
-    numbers=numbers.concat(g_board[i]);
+  for (var i=0;i<maxCol;i++) {
+    numbers=numbers.concat(board[i]);
   }
   // Shuffle 3 times
   shuffle(numbers);
   shuffle(numbers);
   shuffle(numbers);
   // Put back
-  for (var j=0; j<g_maxRow; j++) {
-    for (var i=0;i<g_maxCol;i++) {
-      g_board[i][j]= numbers.shift();
+  for (var j=0; j<maxRow; j++) {
+    for (var i=0;i<maxCol;i++) {
+      board[i][j]= numbers.shift();
     }
   }
 }
@@ -200,11 +206,16 @@ function createBoard() {
 
 // Create board display
 function createBoardDisplay() {
-  var display="<table class=\"board\">";
-  for (var i=0; i<g_maxRow ; i++) {
+
+  var display="<div class=\"times\">Time: <span id=\"elapsedTime\">0</span></div>";
+  //var display="<div class=\"times\">Time: <span id=\"elapsedTime\">0</span> Best: <span id=\"bestTime\">0</span></div>";
+
+  display+="<table class=\"board\">";
+  
+  for (var i=0; i<maxRow ; i++) {
     display+="<tr>";
-    for (var j=0; j<g_maxCol; j++) {
-      var number=g_board[j][i];
+    for (var j=0; j<maxCol; j++) {
+      var number=board[j][i];
       display+="<td id=\"" + j + "," + i + "\"";
       display+="onclick=\"selectCell(" + j + "," + i + ")\">";
       display+="<div class=\"c" + number%5 + "\">";
@@ -213,15 +224,15 @@ function createBoardDisplay() {
     }
     // Row goals
     display+="<td id=\"rg" + i + "\" class=\"goal\">";
-    display+=g_rowGoals[i];
+    display+=rowGoals[i];
     display+="</td>";
     display+="</tr>";
   }
   // Bottom row - column goals
   display+="<tr>";
-  for (var j=0; j<g_maxCol; j++) {
+  for (var j=0; j<maxCol; j++) {
     display+="<td id=\"cg" + j + "\" class=\"goal\">";
-    display+=g_colGoals[j];
+    display+=colGoals[j];
     display+="</td>";
   }
   display+="<td>G</td></tr>";
@@ -236,7 +247,7 @@ function updateBoard() {
 
 // Update cell
 function updateCell(col,row,highlight) {
-  var number=g_board[col][row];
+  var number=board[col][row];
   var className;
   if (highlight==true) {
     className="highlight";
@@ -270,6 +281,11 @@ function updateRowGoal(row,highlight) {
   } else {
     goal.className="goal";
   }
+}
+
+// Update elapsed time
+function updateElapsedTime(time) {
+  document.getElementById("elapsedTime").innerHTML=time;
 }
 
 //////////
@@ -409,8 +425,8 @@ function touchStart(ev) {
     // Get selected col and row
     var id=target.parentNode.getAttribute('id');
     var itemParts=id.split(",");
-    g_selectedCol=extractNumber(itemParts[0]);
-    g_selectedRow=extractNumber(itemParts[1]);
+    selectedCol=extractNumber(itemParts[0]);
+    selectedRow=extractNumber(itemParts[1]);
     // Bring to front
     cellOriginalZIndex = target.style.zIndex;
     target.style.zIndex = 10000;
@@ -463,8 +479,8 @@ function onMouseDown(e) {
     // Get selected col and row
     var id=target.parentNode.getAttribute('id');
     var itemParts=id.split(",");
-    g_selectedCol=extractNumber(itemParts[0]);
-    g_selectedRow=extractNumber(itemParts[1]);
+    selectedCol=extractNumber(itemParts[0]);
+    selectedRow=extractNumber(itemParts[1]);
     // Grab the mouse position
     startCoor = new Coordinates(e.clientX, e.clientY);
     // Bring the clicked element to the front while it is being dragged
@@ -537,6 +553,28 @@ function scrollY() {
 }
 
 //////////
+// Time
+//////////
+
+function startTimer() {
+  startTime=new Date().getTime();
+  stopTimer();
+  timeInterval=setInterval(calculateTime,250);
+}
+
+function stopTimer() {
+  if (timeInterval) {
+    clearInterval(timeInterval);
+  }
+}
+
+function calculateTime() {
+  var currentTime=new Date().getTime();  
+  var elapsedTime=Math.round((currentTime-startTime)/1000);
+  updateElapsedTime(elapsedTime);
+}
+
+//////////
 // Main
 //////////
 
@@ -556,23 +594,24 @@ function startNewGame() {
   currCoor=null;
   cellMoving=null;
   // Reset selected
-  g_selectedCol=-1;
-  g_selectedRow=-1;
+  selectedCol=-1;
+  selectedRow=-1;
   // Set rows/cols
   var size=parseInt(document.getElementById("size").value);
-  g_maxCol=size;
-  g_maxRow=size;
+  maxCol=size;
+  maxRow=size;
   // Create board and update display
   createBoard();
   updateBoard();
   // Check game over - for highlighting and it's of course possible :)
   checkGameOver();
+  // Start timer
+  startTimer();
 }
 
 </script>
 </head>
 <body onload="initGame();startNewGame();">
-  <p> G = (&#8721; n) % 10</p>
   <div id="board"></div>
   <div id="debug"></div>
   <!-- New Game -->
