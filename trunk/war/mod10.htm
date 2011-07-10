@@ -21,7 +21,6 @@
 <script type="text/javascript">
 
 // FE
-// Best times (store in cookie by board size)
 // Change innerHTML to document node...
 
 //////////
@@ -46,6 +45,8 @@ var cellOriginalZIndex=0;
 // Time
 var timeInterval=null;
 var startTime=0;
+var BEST_TIME_COOKIE="bestTime_";
+var TIME_NOT_SET=-1;
 
 //////////
 // Utilities
@@ -59,6 +60,27 @@ function createRandomNumber(max) {
 function extractNumber(value) {
   var n = parseInt(value);
   return n == null || isNaN(n) ? 0 : n;
+}
+
+function getCookie(name) {
+  if (document.cookie.length>0) {
+    var start=document.cookie.indexOf(name+"=");
+    if (start!=-1) {
+      start+=name.length+1;
+      var end=document.cookie.indexOf(";",start);
+      if (end==-1) {
+        end=document.cookie.length;
+      }
+      return unescape(document.cookie.substring(start,end));
+    }
+  }
+  return "";
+}
+
+function setCookie(name,value,daysToExpire) {
+  var date=new Date();
+  date.setDate(date.getDate()+daysToExpire);
+  document.cookie=name + "=" +escape(value) + ((daysToExpire==null) ? "" : ";expires="+date.toUTCString());
 }
 
 function shuffle(array) {
@@ -99,10 +121,26 @@ function checkGameOver() {
       allAttained=false;
     }
   }
-  // If all attained
-  if (allAttained) {
-    stopTimer();
-    alert("Done!");
+  return allAttained;
+}
+
+function gameOver() {
+  stopTimer();
+  var elapsedTime=calculateTime();
+  var bestTime=getBestTime();
+  if (bestTime==TIME_NOT_SET || elapsedTime<bestTime) {
+    setCookie(BEST_TIME_COOKIE + maxRow, elapsedTime, 365);
+    updateBestTimeDisplay();
+  }
+  alert("Done!");
+}
+
+function getBestTime() {
+  var bestTime=getCookie(BEST_TIME_COOKIE + maxRow);
+  if (bestTime=="") {
+    return TIME_NOT_SET;
+  } else {
+    return parseInt(bestTime);
   }
 }
 
@@ -156,7 +194,9 @@ function selectCell(col,row)
     // Deselect for next
     selectedCol=-1;
     selectedRow=-1;
-    checkGameOver();
+    if (checkGameOver()){ 
+      gameOver();
+    }
   }
 }
 
@@ -207,8 +247,7 @@ function createBoard() {
 // Create board display
 function createBoardDisplay() {
 
-  var display="<div class=\"times\">Time: <span id=\"elapsedTime\">0</span></div>";
-  //var display="<div class=\"times\">Time: <span id=\"elapsedTime\">0</span> Best: <span id=\"bestTime\">0</span></div>";
+  var display="<div class=\"times\">Time: <span id=\"elapsedTime\">0</span> <span style=\"margin-left:2em;\">Best: <span id=\"bestTime\">0</span></span></div>";
 
   display+="<table class=\"board\">";
   
@@ -238,6 +277,14 @@ function createBoardDisplay() {
   display+="<td>G</td></tr>";
   display+="</table>";
   return display;
+}
+
+function updateBestTimeDisplay() {
+  var time=getBestTime();
+  if (time==TIME_NOT_SET) {
+    time="NA";
+  }
+  document.getElementById("bestTime").innerHTML=time;
 }
 
 // Update board
@@ -572,6 +619,7 @@ function calculateTime() {
   var currentTime=new Date().getTime();  
   var elapsedTime=Math.round((currentTime-startTime)/1000);
   updateElapsedTime(elapsedTime);
+  return elapsedTime;
 }
 
 //////////
@@ -603,10 +651,14 @@ function startNewGame() {
   // Create board and update display
   createBoard();
   updateBoard();
+  updateBestTimeDisplay();
   // Check game over - for highlighting and it's of course possible :)
-  checkGameOver();
-  // Start timer
-  startTimer();
+  if (checkGameOver()) {
+    startNewGame();
+  } else {
+    // Start timer
+    startTimer();
+  }
 }
 
 </script>
