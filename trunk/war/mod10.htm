@@ -313,7 +313,9 @@ function updateBestTimeDisplay() {
   if (time==TIME_NOT_SET) {
     time="NA";
   }
-  document.getElementById("bestTime").innerHTML=time;
+  var bestTime=document.getElementById("bestTime");
+  removeChildrenFromElement(bestTime);
+  bestTime.appendChild(document.createTextNode(time));
 }
 
 // Update board
@@ -367,7 +369,9 @@ function updateRowGoal(row,highlight) {
 
 // Update elapsed time
 function updateElapsedTime(time) {
-  document.getElementById("elapsedTime").innerHTML=time;
+  var elaspedTime=document.getElementById("elapsedTime");
+  removeChildrenFromElement(elaspedTime);
+  elaspedTime.appendChild(document.createTextNode(time));
 }
 
 //////////
