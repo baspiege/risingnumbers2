@@ -6,7 +6,8 @@
 <title>Mod 10</title>
 <style type="text/css">
 .board {text-align:center;font-size:400%;font-weight:bold;border:1px solid black;}
-.board .times {line-height:2em;text-align:left;font-size:medium;font-weight:normal;}
+.times {line-height:2em;}
+#elapsedTime {margin-right:2em;}
 .board td {width:1em;border:1px solid black;}
 .c1 {background-color: #ff0000; color: #ffffff;}
 .c2 {background-color: #00ff00; color: #ffffff;}
@@ -17,11 +18,7 @@
 .highlight {background-color: #ffffff; color: #000000;}
 .highlightGoal { background-color: #ffff00; color: #000000;}
 </style>
-
 <script type="text/javascript">
-
-// FE
-// Change innerHTML to document node...
 
 //////////
 // Global vars
@@ -77,10 +74,18 @@ function getCookie(name) {
   return "";
 }
 
+function removeChildrenFromElement(element) {
+  if (element.hasChildNodes()) {
+    while (element.childNodes.length>0) {
+      element.removeChild(element.firstChild);
+    }
+  }
+}
+
 function setCookie(name,value,daysToExpire) {
   var date=new Date();
   date.setDate(date.getDate()+daysToExpire);
-  document.cookie=name + "=" +escape(value) + ((daysToExpire==null) ? "" : ";expires="+date.toUTCString());
+  document.cookie=name+"="+escape(value)+((daysToExpire==null)?"":";expires="+date.toUTCString());
 }
 
 function shuffle(array) {
@@ -194,7 +199,7 @@ function selectCell(col,row)
     // Deselect for next
     selectedCol=-1;
     selectedRow=-1;
-    if (checkGameOver()){ 
+    if (checkGameOver()){
       gameOver();
     }
   }
@@ -245,38 +250,62 @@ function createBoard() {
 //////////
 
 // Create board display
-function createBoardDisplay() {
-
-  var display="<div class=\"times\">Time: <span id=\"elapsedTime\">0</span> <span style=\"margin-left:2em;\">Best: <span id=\"bestTime\">0</span></span></div>";
-
-  display+="<table class=\"board\">";
-  
+function createBoardDisplay(display) {
+  // Times
+  var times=document.createElement("div");
+  times.setAttribute("class", "times");
+  display.appendChild(times);
+  // Current time
+  times.appendChild(document.createTextNode("Time: "));
+  var elapsedTime=document.createElement("span");
+  elapsedTime.setAttribute("id", "elapsedTime");
+  elapsedTime.appendChild(document.createTextNode("0"));
+  times.appendChild(elapsedTime);
+  // Best time
+  times.appendChild(document.createTextNode("Best: "));
+  var bestTime=document.createElement("span");
+  bestTime.setAttribute("id", "bestTime");
+  times.appendChild(bestTime);
+  // Board
+  var table=document.createElement("table");
+  table.setAttribute("class", "board");
+  display.appendChild(table);
+  // Each row
   for (var i=0; i<maxRow ; i++) {
-    display+="<tr>";
+    var row=document.createElement("tr");
+    table.appendChild(row);
     for (var j=0; j<maxCol; j++) {
       var number=board[j][i];
-      display+="<td id=\"" + j + "," + i + "\"";
-      display+="onclick=\"selectCell(" + j + "," + i + ")\">";
-      display+="<div class=\"c" + number%5 + "\">";
-      display+=number;
-      display+="</div></td>";
+      var cell=document.createElement("td");
+      cell.setAttribute("id",j+","+i);
+      cell.setAttribute("onclick", "selectCell("+j+","+i+")");
+      row.appendChild(cell);
+      var cellDiv=document.createElement("div");
+      cellDiv.setAttribute("class","c"+number%5);
+      cellDiv.appendChild(document.createTextNode(number));
+      cell.appendChild(cellDiv);
     }
     // Row goals
-    display+="<td id=\"rg" + i + "\" class=\"goal\">";
-    display+=rowGoals[i];
-    display+="</td>";
-    display+="</tr>";
+    var goal=document.createElement("td");
+    goal.setAttribute("class","goal");
+    goal.setAttribute("id","rg"+i);
+    goal.appendChild(document.createTextNode(rowGoals[i]));
+    row.appendChild(goal);
   }
   // Bottom row - column goals
-  display+="<tr>";
+  var row=document.createElement("tr");
+  table.appendChild(row);
   for (var j=0; j<maxCol; j++) {
-    display+="<td id=\"cg" + j + "\" class=\"goal\">";
-    display+=colGoals[j];
-    display+="</td>";
+    var goal=document.createElement("td");
+    goal.setAttribute("class","goal");
+    goal.setAttribute("id","cg"+j);
+    goal.appendChild(document.createTextNode(colGoals[j]));
+    row.appendChild(goal);
   }
-  display+="<td>G</td></tr>";
-  display+="</table>";
-  return display;
+  // "G" in bottom right corner
+  var goal=document.createElement("td");
+  goal.appendChild(document.createTextNode("G"));
+  row.appendChild(goal);
 }
 
 function updateBestTimeDisplay() {
@@ -289,7 +318,9 @@ function updateBestTimeDisplay() {
 
 // Update board
 function updateBoard() {
-  document.getElementById("board").innerHTML=createBoardDisplay();
+  var board=document.getElementById("board")
+  removeChildrenFromElement(board)
+  createBoardDisplay(board);
 }
 
 // Update cell
@@ -307,7 +338,7 @@ function updateCell(col,row,highlight) {
 
 // Update col goal
 function updateColGoal(col,highlight) {
-  var goal=document.getElementById( "cg" + col);
+  var goal=document.getElementById("cg" + col);
   if (highlight) {
     goal.className="highlightGoal";
   } else {
@@ -322,7 +353,7 @@ function updateDebug(message) {
 
 // Update row goal
 function updateRowGoal(row,highlight) {
-  var goal=document.getElementById( "rg" + row);
+  var goal=document.getElementById("rg" + row);
   if (highlight) {
     goal.className="highlightGoal";
   } else {
@@ -353,7 +384,7 @@ function checkCellInBoard() {
         if (checkInElement(cols[j], currCoor.x, currCoor.y)){
           moving=true;
           // Get location
-          var id=cols[j].getAttribute('id');
+          var id=cols[j].getAttribute("id");
           var itemParts=id.split(",");
           var col=extractNumber(itemParts[0]);
           var row=extractNumber(itemParts[1]);
@@ -373,19 +404,19 @@ function checkCellInBoard() {
   }
   // Revert back.
   if (!moving) {
-    cellMoving.style.position = "static";
-    cellMoving.style.left = 0;
-    cellMoving.style.top = 0;
+    cellMoving.style.position="static";
+    cellMoving.style.left=0;
+    cellMoving.style.top=0;
   }
 }
 
 function checkInElement(element, posX, posY) {
-  var coor = findPos(element);
-  var targPosX = coor.x;
-  var targPosY = coor.y;
-  var targWidth = extractNumber(element.offsetWidth);
-  var targHeight = extractNumber(element.offsetHeight);
-  if ((posX > targPosX) && (posX < (targPosX + targWidth)) && (posY > targPosY) && (posY < (targPosY + targHeight))) {
+  var coor=findPos(element);
+  var targPosX=coor.x;
+  var targPosY=coor.y;
+  var targWidth=extractNumber(element.offsetWidth);
+  var targHeight=extractNumber(element.offsetHeight);
+  if ((posX>targPosX) && (posX<(targPosX+targWidth)) && (posY>targPosY) && (posY<(targPosY+targHeight))) {
       return true;
   }
   return false;
@@ -402,9 +433,9 @@ function findPos(obj) {
   var top=0;
   if (obj.offsetParent) {
     do {
-      left += obj.offsetLeft;
-      top += obj.offsetTop;
-    } while (obj = obj.offsetParent);
+      left+=obj.offsetLeft;
+      top+=obj.offsetTop;
+    } while (obj=obj.offsetParent);
   }
   return new Coordinates(left,top);
 }
@@ -418,11 +449,11 @@ function getCoordinates(ev) {
   var x;
   var y;
   if (ev.touches && ev.touches.length) { // Multi touch
-    x = ev.touches[0].clientX;
-    y = ev.touches[0].clientY;
+    x=ev.touches[0].clientX;
+    y=ev.touches[0].clientY;
   } else { // Single touch
-    x = e.clientX;
-    y = e.clientY;
+    x=e.clientX;
+    y=e.clientY;
   }
   return new Coordinates(x, y);
 }
@@ -440,9 +471,9 @@ function touchEnd (ev) {
   if (currCoor==null) {
     return;
   }
-  if (cellMoving != null) {
+  if (cellMoving!= null) {
     checkCellInBoard();
-    cellMoving = null;
+    cellMoving=null;
   }
 }
 
@@ -452,8 +483,8 @@ function touchMove(ev) {
     return;
   }
   currCoor=getCoordinates(ev);
-  cellMoving.style.left = (currCoor.x - startCoor.x) + 'px';
-  cellMoving.style.top = (currCoor.y - startCoor.y) + 'px';
+  cellMoving.style.left=(currCoor.x-startCoor.x)+"px";
+  cellMoving.style.top=(currCoor.y-startCoor.y)+"px";
 }
 
 function touchStart(ev) {
@@ -470,15 +501,15 @@ function touchStart(ev) {
     startCoor=getCoordinates(ev);
     target.style.position = "relative";
     // Get selected col and row
-    var id=target.parentNode.getAttribute('id');
+    var id=target.parentNode.getAttribute("id");
     var itemParts=id.split(",");
     selectedCol=extractNumber(itemParts[0]);
     selectedRow=extractNumber(itemParts[1]);
     // Bring to front
-    cellOriginalZIndex = target.style.zIndex;
-    target.style.zIndex = 10000;
+    cellOriginalZIndex=target.style.zIndex;
+    target.style.zIndex=10000;
     // Element to move
-    cellMoving = target;
+    cellMoving=target;
     ev.preventDefault();
   }
 }
@@ -502,7 +533,7 @@ function mouseY(evt) {
     return evt.pageY;
   }
   else if (evt.clientY) {
-    return evt.clientY + scrollY();
+    return evt.clientY+scrollY();
   }
   else return null;
 }
@@ -524,7 +555,7 @@ function onMouseDown(e) {
   if ((e.button == 1 && window.event != null || e.button == 0) && target.className && target.className.indexOf("c")!=-1) {
     target.style.position = "relative";
     // Get selected col and row
-    var id=target.parentNode.getAttribute('id');
+    var id=target.parentNode.getAttribute("id");
     var itemParts=id.split(",");
     selectedCol=extractNumber(itemParts[0]);
     selectedRow=extractNumber(itemParts[1]);
@@ -563,8 +594,8 @@ function onMouseMove(e) {
     e = window.event;
   }
   if (startCoor!=null && cellMoving!=null) {
-    cellMoving.style.left = (e.clientX - startCoor.x) + 'px';
-    cellMoving.style.top = (e.clientY - startCoor.y) + 'px';
+    cellMoving.style.left = (e.clientX - startCoor.x) + "px";
+    cellMoving.style.top = (e.clientY - startCoor.y) + "px";
   }
 }
 
@@ -616,7 +647,7 @@ function stopTimer() {
 }
 
 function calculateTime() {
-  var currentTime=new Date().getTime();  
+  var currentTime=new Date().getTime();
   var elapsedTime=Math.round((currentTime-startTime)/1000);
   updateElapsedTime(elapsedTime);
   return elapsedTime;
@@ -629,9 +660,9 @@ function calculateTime() {
 function initGame() {
   // Touch events
   var board=document.getElementById("board");
-  board.addEventListener('touchstart', touchStart, false);
-  board.addEventListener('touchmove', touchMove, false);
-  board.addEventListener('touchend', touchEnd, false);
+  board.addEventListener("touchstart", touchStart, false);
+  board.addEventListener("touchmove", touchMove, false);
+  board.addEventListener("touchend", touchEnd, false);
   // Mouse events
   document.onmousedown = onMouseDown;
   document.onmouseup = onMouseUp;
@@ -652,7 +683,7 @@ function startNewGame() {
   createBoard();
   updateBoard();
   updateBestTimeDisplay();
-  // Check game over - for highlighting and it's of course possible :)
+  // If game over, restart.
   if (checkGameOver()) {
     startNewGame();
   } else {
