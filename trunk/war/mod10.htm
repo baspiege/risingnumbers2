@@ -330,10 +330,14 @@ function updateCell(col,row,highlight) {
   if (highlight==true) {
     className="highlight";
   } else {
-    className="c" + number%5;
+    className="c"+number%5;
   }
-  var cell=document.getElementById( col + "," + row);
-  cell.innerHTML="<div class=\"" + className + "\">" + number + "</div>";
+  var cell=document.getElementById(col+","+row);
+  removeChildrenFromElement(cell);
+  var cellDiv=document.createElement("div");
+  cellDiv.setAttribute("class",className);
+  cellDiv.appendChild(document.createTextNode(number));
+  cell.appendChild(cellDiv);
 }
 
 // Update col goal
