@@ -70,6 +70,12 @@ function Ball() {
   this.number=0;
 }
 
+// Coordinates for touch movement
+function Coordinates(x, y) {
+  this.x=x;
+  this.y=y;
+}
+
 // Constants
 var BALLS_IN_ROW=8;
 var STARTING_BALL_MAX=25;
@@ -137,6 +143,10 @@ var shooting=false; // Is shooting?
 
 // XmlHttpRequest
 var xmlHttpRequester=new XMLHttpRequest();
+
+// Touch events
+var startCoor=null;
+var endCoor=null;
 
 ///////////////////
 // Utilities
@@ -552,22 +562,49 @@ function hidePauseButton(label) {
 // Interaction
 ///////////////////
 
-function touchMove (ev) {
-
+// Get coordinates from a touch event
+function getCoordinates(ev) {
   var x;
-  if (ev.touches && ev.touches.length) { // iPhone
+  var y;
+  if (ev.touches && ev.touches.length) { // Multi touch
     x = ev.touches[0].clientX;
-  } else { // All others
+    y = ev.touches[0].clientY;
+  } else { // Single touch
     x = e.clientX;
-  }
-  
-  if (x<MARGIN_LEFT) {
-    x=MARGIN_LEFT;
-  } else if (x>MARGIN_RIGHT) {
-    x=MARGIN_RIGHT;
+    y = e.clientY;
   }
 
-  currentPositionX=x;
+  return new Coordinates(x, y);
+}
+
+// Set end coordinates into global var as touch is moved
+function touchMove(ev) {
+  endCoor=getCoordinates(ev);
+}
+
+// Determine movement
+function touchEnd (ev) {
+  if (startCoor==null || endCoor==null) {
+    return;
+  }
+
+  // Deltas
+  var dX=startCoor.x-endCoor.x;
+  var dY=endCoor.y-startCoor.y;
+
+  currentPositionX-=dX;
+  
+  if (currentPositionX<MARGIN_LEFT) {
+    currentPositionX=MARGIN_LEFT;
+  } else if (currentPositionX>MARGIN_RIGHT) {
+    currentPositionX=MARGIN_RIGHT;
+  }
+}
+
+// Set start coordinates into global var
+function touchStart(ev) {
+  startCoor=getCoordinates(ev);
+  endCoor=null;
 }
 
 function mouseMove (ev) {
@@ -619,8 +656,11 @@ function init() {
   // Set listeners
   document.addEventListener('mousemove', mouseMove, false);
   document.addEventListener('click', shootBall, true); // Capturing so pause button doesn't cause shoot
-  document.addEventListener('keydown', keyDownEscape, false);
+  document.addEventListener('keydown', keyDownEscape, false); 
+  document.addEventListener('touchstart', touchStart, false);
   document.addEventListener('touchmove', touchMove, false);
+  document.addEventListener('touchend', touchEnd, false);
+
 
   // Set context
   ctx = canvas.getContext("2d");
