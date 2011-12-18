@@ -580,10 +580,7 @@ function getCoordinates(ev) {
 // Set end coordinates into global var as touch is moved
 function touchMove(ev) {
   endCoor=getCoordinates(ev);
-}
-
-// Determine movement
-function touchEnd (ev) {
+  
   if (startCoor==null || endCoor==null) {
     return;
   }
@@ -599,6 +596,8 @@ function touchEnd (ev) {
   } else if (currentPositionX>MARGIN_RIGHT) {
     currentPositionX=MARGIN_RIGHT;
   }
+  
+  startCoor=endCoor;
 }
 
 // Set start coordinates into global var
@@ -659,8 +658,6 @@ function init() {
   document.addEventListener('keydown', keyDownEscape, false); 
   document.addEventListener('touchstart', touchStart, false);
   document.addEventListener('touchmove', touchMove, false);
-  document.addEventListener('touchend', touchEnd, false);
-
 
   // Set context
   ctx = canvas.getContext("2d");
