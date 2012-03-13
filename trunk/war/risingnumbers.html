@@ -10,10 +10,11 @@
 
 /*
 TODO
+- Add touch up
 
 Minor
 - When starting, have countdown 3, 2, 1
-- Add move mouse up (like touch up)
+- Add move mouse up
 
 Version 2
 - Key board controls - left, right, space bar to shoot.
@@ -122,6 +123,7 @@ var isGameWon=false;
 var points=0;
 var pause=false;
 var currentPositionX=MARGIN_LEFT+(BALLS_IN_QUEUE*BALL_SPACING);
+var currentPositionY=QUEUE_Y;
 var redrawBoard=false;
 var redrawBallsInQueue=false;
 var playOnline=false;
@@ -209,8 +211,9 @@ function createNewBall() {
 
   // Get latest
   currBall=ballsInQueue.pop();
+  currentPositionY=QUEUE_Y;
   currBall.x+=BALL_SPACING; // Move to end of line.
-
+  
   // For new ball to queue, if mulitplay, get from opponents balls.
   // Else, create a new ball.
   var newBall;
@@ -444,7 +447,8 @@ function detectCollision(movingBall) {
       }
     
       clearBall(movingBall);
-      movingBall.y-=Y_DELTA;
+      currentPositionY-=Y_DELTA;
+      movingBall.y=currentPositionY;
       movingBall.x=currentPositionX;
       drawBall(movingBall);
     }
@@ -622,14 +626,20 @@ function touchMove(ev) {
 
   // Deltas
   var dX=startCoor.x-endCoor.x;
-  var dY=endCoor.y-startCoor.y;
-
-  currentPositionX-=dX;
+  var dY=startCoor.y-endCoor.y;
   
+  currentPositionX-=dX;
   if (currentPositionX<MARGIN_LEFT) {
     currentPositionX=MARGIN_LEFT;
   } else if (currentPositionX>MARGIN_RIGHT) {
     currentPositionX=MARGIN_RIGHT;
+  }
+  
+  if (dY>0) {
+    currentPositionY-=dY;
+  }
+  if (currentPositionY<MARGIN_TOP) {
+    currentPositionY=MARGIN_TOP;
   }
   
   startCoor=endCoor;
@@ -809,13 +819,12 @@ function pauseContinue() {
 }
 </script>
 <div style="width:300px">
-  <p>Rising number divides!</p>
   <div style="float:left">Points: <span id="points">0</span></div>
   <div style="float:right">High Score: <span id="highScore">0</span></div>
   <canvas style="border:1px #000000 solid;" id="canvas" width="300" height="300">
     <p style="color:#ff0000;">
     This games requires a browser that supports the HTML 5 canvas tag, such
-    as the latest versions of Firefox, Chrome, Opera, and Safari. IE users - IE 9 will support canvas!
+    as the latest versions of Firefox, Chrome, Opera, and Safari. IE users - IE 9 supports canvas!
     </p>
   </canvas>
   <div style="float:left;margin-top:1em;">
