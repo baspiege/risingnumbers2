@@ -695,10 +695,11 @@ function init() {
 
   // Set listeners
   document.addEventListener('mousemove', mouseMove, false);
-  document.addEventListener('click', shootBall, true); // Capturing so pause button doesn't cause shoot
+  document.addEventListener('click', shootBall, false);
   document.addEventListener('keydown', keyDownEscape, false); 
   document.addEventListener('touchstart', touchStart, false);
   document.addEventListener('touchmove', touchMove, false);
+  document.getElementById("pauseButton").addEventListener('click', pauseContinue, false);
 
   // Set context
   ctx = canvas.getContext("2d");
@@ -790,8 +791,7 @@ function newGame() {
   }
 }
 
-function pauseContinue() {
-
+function pauseContinue(e) {
   // If not supported, stop processing.
   if (!ctx) {
     return;
@@ -815,6 +815,7 @@ function pauseContinue() {
     updatePauseButton(PAUSE_LABEL);
     pause=false;
   }
+  e.stopPropagation();
 }
 </script>
 <div style="width:300px">
@@ -831,7 +832,7 @@ function pauseContinue() {
     <input id="playOnline" type="checkbox">Play Online</input>
   </div>
   <div style="float:right;margin-top:1em;">
-    <button id="pauseButton" onclick="pauseContinue();return false;">Pause</button>
+    <button id="pauseButton">Pause</button>
   </div>
   <div id="debug"></div>
 </div>
