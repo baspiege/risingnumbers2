@@ -1,0 +1,3 @@
+set JAVA_HOME=c:\Program Files\Java\jdk1.7.0_51\bin
+"%JAVA_HOME%\javac" -d C:\dev\mathgames\war\WEB-INF\classes -classpath C:\dev\mathgames\war\WEB-INF\lib\jdo2-api-2.3-eb.jar;C:\dev\mathgames\src\;C:\dev\mathgames\build-lib\servlet-api.jar;C:\dev\mathgames\war\WEB-INF\lib\appengine-api.jar; C:\dev\mathgames\src\risingnumbers\*.java
+"%JAVA_HOME%\javac" -d C:\dev\mathgames\war\WEB-INF\classes -classpath C:\dev\mathgames\war\WEB-INF\lib\jdo2-api-2.3-eb.jar;C:\dev\mathgames\war\WEB-INF\lib\appengine-api.jar;C:\dev\mathgames\src\mathgames\ C:\dev\mathgames\src\risingnumbers\data\model\*.java
