@@ -4,12 +4,23 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
 <title>Swipe Numbers!</title>
+<style type="text/css">
+.ball {
+  background-color:#0000ff;
+  width: 50px;
+  height: 50px;
+  border-radius: 25px; 
+}
+</style>
 </head>
 <body>
-<script type="text/javascript">
+<script>
 
 /*
 TODO
+
+col/rows...
+Draw with div...
 
 Swipe
 Check if adding to number.
@@ -33,29 +44,16 @@ function Coordinates(x, y) {
 }
 
 // Constants
-var BALLS_IN_ROW=8;
+var BOARD_COL=2;
+var BOARD_ROW=2;
 var STARTING_BALL_MAX=10;
-var BOARD_X=300;
-var BOARD_Y=300;
-var BALL_SPACING=36;
-var MARGIN_LEFT=20;
-var MARGIN_RIGHT=280;
-var MARGIN_TOP=40;
-var BALL_RADIUS=15;
-var BALL_RADIUS_CLEAR=BALL_RADIUS+1; // 1 more than radius to prevent shadow.
+var BALL_RADIUS=20;
 
 // Game variables
-var ctx;
 var isGameOver=false;
 var isGameWon=false;
 var points=0;
-
-// Board
-var balls=new Array();
-
-// Touch events
-var startCoor=null;
-var endCoor=null;
+var board=new Array();
 
 ///////////////////
 // Utilities
@@ -65,51 +63,34 @@ function createRandomExclusive(max) {
   return Math.floor(Math.random()*max);
 }
 
+function removeChildrenFromElement(element) {
+  if (element.hasChildNodes()) {
+    while (element.childNodes.length>0) {
+      element.removeChild(element.firstChild);
+    }
+  }
+}
+
 ///////////////////
 // Board
 ///////////////////
 
 function createBoard() {
-  var x=MARGIN_LEFT;
-  for (var i=0;i<BALLS_IN_ROW;i++) {
-    var ball=new Ball();
-    ball.x=x;
-    ball.y=MARGIN_TOP;
-    ball.number=createRandomExclusive(STARTING_BALL_MAX)+1;
-    balls.push(ball);
-    x+=BALL_SPACING;
-  }
-
-  for (var k=2;k<16;k=k+2) {
-    x=MARGIN_LEFT;
-    for (var i=0;i<BALLS_IN_ROW;i++) {
+  for (var i=0;i<BOARD_COL;i++) {
+    var col=new Array();
+    board.push(col);
+    for (var j=0;j<BOARD_ROW;j++) {
       var ball=new Ball();
-      ball.x=x;
-      ball.y=MARGIN_TOP+(BALL_RADIUS*k); // Next row
       ball.number=createRandomExclusive(STARTING_BALL_MAX)+1;
-      balls.push(ball);
-      x+=BALL_SPACING;
+      col.push(ball);
     }
   }
-}
-
-function detectBallSelected(coor, ball_1) {
-  var dY=ball_1.y-coor.y;
-  var dX=ball_1.x-coor.x;
-  debug(dY);
-  return Math.sqrt((dY*dY)+(dX*dX))<=BALL_RADIUS;
 }
 
 function detectSelection(coor) {
-  for (var i=0;i<balls.length;i++) {
-    if (detectBallSelected(coor,balls[i])) {
-      balls[i].selected=true;
-      clearBall(balls[i]);
-      drawBall(balls[i]);
-    }
-  }
-  
-  
+  for (var i=0;i<board.length;i++) {
+    // Cols?
+  }  
 }
 
 ///////////////////
@@ -117,58 +98,33 @@ function detectSelection(coor) {
 ///////////////////
 
 function clearBoard() {
-    ctx.clearRect(0,0,BOARD_X,BOARD_Y);
-}
-
-function clearBall(ball) {
-  ctx.beginPath();
-  ctx.fillStyle = "#ffffff";
-  ctx.arc(ball.x, ball.y, BALL_RADIUS_CLEAR, 0, Math.PI*2, true);
-  ctx.closePath();
-  ctx.fill();
+  var boardDisplay=document.getElementById("board");
+//  removeChildrenFromElement(boardDisplay);
 }
 
 function drawBall(ball) {
-
-  var ballColor;
-  if (!ball.selected) {
-    ballColor="#0000ff"
-  } else {
-    ballColor="#ff00ff"  
-  }
-
-  // Circle
-  ctx.beginPath();
-  ctx.fillStyle = ballColor;
-  ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI*2, true);
-  ctx.closePath();
-  ctx.fill();
-
-  // Color of number
-  ctx.fillStyle = "#ffffff";
-
-  // Adjust position based on number of digits
-  if (ball.number>99) {
-    ctx.font = "bold 18px serif";
-    ctx.fillText(ball.number,ball.x-14,ball.y+5);
-  } else if (ball.number>9) {
-    ctx.font = "bold 24px serif";
-    ctx.fillText(ball.number,ball.x-12,ball.y+7);
-  } else {
-    ctx.font = "bold 24px serif";
-    ctx.fillText(ball.number,ball.x-6,ball.y+7);
-  }
+  var ballDisplay=document.createElement("div");
+  ballDisplay.setAttribute("class", "ball");
+  ballDisplay.appendChild(document.createTextNode(ball.number));
+  return ballDisplay;
 }
 
-function drawBallsOnBoard() {
-  for (var i=0;i<balls.length;i++) {
-    drawBall(balls[i]);
+function drawBalls() {
+  var boardDisplay=document.getElementById("board");
+  for (var i=0;i<board.length;i++) {
+  
+        debug('2');
+    var col=board[i];
+    for (var j=0;j<col.length;j++) {
+      boardDisplay.appendChild(drawBall(col[j]));
+      
+    }
   }
 }
 
 function drawBoard() {
     clearBoard();
-    drawBallsOnBoard();  
+    drawBalls();
 }
 
 function updatePointsDisplay() {
@@ -188,44 +144,29 @@ function getCoordinatesTouchEvent(ev) {
   var x;
   var y;
   if (ev.touches && ev.touches.length) { // Multi touch
+    //debug('multi');
     x = ev.touches[0].clientX;
     y = ev.touches[0].clientY;
   } else { // Single touch
+    //debug('single');
     x = e.clientX;
     y = e.clientY;
   }
 
+  // debug(x + "," + y);
+  
   return new Coordinates(x, y);
 }
 
-// Set end coordinates into global var as touch is moved
 function touchMove(ev) {
-  endCoor=getCoordinatesTouchEvent(ev);
-  
-  if (startCoor==null || endCoor==null) {
-    return;
-  }
-  
-  // Check if inside ball  
-  detectSelection(coor);
-  
-  // If so, change color of the ball
-  
-  // Deltas
-  var dX=startCoor.x-endCoor.x;
-  var dY=startCoor.y-endCoor.y;
-  
-  startCoor=endCoor;
+  ev.preventDefault();
+//  var coor=getCoordinatesTouchEvent(ev);
+//  detectSelection(coor);
 }
 
-// Set start coordinates into global var
 function touchStart(ev) {
-  startCoor=getCoordinatesTouchEvent(ev);
-  
-  // Check if inside ball
-  // If so, change color of the ball
-  
-  endCoor=null;
+//  var coor=getCoordinatesTouchEvent(ev);
+//  detectSelection(coor);
 }
 
 function mouseMove (ev) {
@@ -238,13 +179,12 @@ function mouseMove (ev) {
   if (ev.offsetY || ev.offsetY == 0) {
     y = ev.offsetY;
   }
-
   var coor=new Coordinates(x, y);
   
   //debug(x + "," + y);
   
   // Check if inside ball  
-  detectSelection(coor);
+  //detectSelection(coor);
 }
 ///////////////////
 // Set-up
@@ -252,30 +192,17 @@ function mouseMove (ev) {
 
 function init() {
 
-  var canvas=document.getElementById("canvas");
-
-  // If not supported, stop processing.
-  if (!canvas.getContext) {
-    return;
-  }
+  var board=document.getElementById("board");
 
   // Set listeners
-  document.addEventListener('mousemove', mouseMove, false);
-  document.addEventListener('touchstart', touchStart, false);
-  document.addEventListener('touchmove', touchMove, false);
-
-  // Set context
-  ctx = canvas.getContext("2d");
-
+  //board.addEventListener('mousemove', mouseMove, false);
+  board.addEventListener('touchstart', touchStart, false);
+  board.addEventListener('touchmove', touchMove, false);
+  
   newGame();
 }
 
 function newGame() {
-
-  // If not supported, stop processing.
-  if (!ctx) {
-    return;
-  }
 
   // Reset variables
   isGameOver=false;
@@ -295,16 +222,14 @@ function newGame() {
 
 
 </script>
-<div style="width:300px">
-  <div style="float:left">Points: <span id="points">0</span></div>
-  <canvas style="border:1px #000000 solid;" id="canvas" width="300" height="300">
-    <p style="color:#ff0000;">
-    This games requires a browser that supports the HTML 5 canvas tag, such
-    as the latest versions of Firefox, Chrome, Opera, and Safari. IE users - IE 9 supports canvas!
-    </p>
-  </canvas>
+<div style="width:320px">
+  <div style="float:left">Points: <span id="points">100</span></div>
+  <br/>
+  <div style="border:1px #000000 solid;" id="board" width="320" height="320">
+    TEST
+  </div>
   <div style="float:left;margin-top:1em;">
-    <button onclick="newGame();return false;">New Game</button><br/><br/>
+    <button onclick="newGame();return false;">New Game v1</button><br/><br/>
   </div>
   <div id="debug"></div>
 </div>
