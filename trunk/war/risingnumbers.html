@@ -617,6 +617,7 @@ function getCoordinates(ev) {
 
 // Set end coordinates into global var as touch is moved
 function touchMove(ev) {
+  ev.preventDefault();
   endCoor=getCoordinates(ev);
   
   if (startCoor==null || endCoor==null) {
