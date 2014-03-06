@@ -460,8 +460,8 @@ function getCoordinates(ev) {
     x=ev.touches[0].clientX;
     y=ev.touches[0].clientY;
   } else { // Single touch
-    x=e.clientX;
-    y=e.clientY;
+    x=ev.clientX;
+    y=ev.clientY;
   }
   return new Coordinates(x, y);
 }
