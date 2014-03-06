@@ -16,6 +16,20 @@
   vertical-align: middle;
   line-height: 30px;
   margin: 3px;
+  font-weight:bold;
+  color: #ffffff;
+}
+
+.ball2 {
+  background-color:#00ff00;
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 30px;
+  margin: 3px;
+  font-weight:bold;
 }
 
 .column {
@@ -70,6 +84,18 @@ function createRandomExclusive(max) {
   return Math.floor(Math.random()*max);
 }
 
+function findPos(obj) {
+  var left=0;
+  var top=0;
+  if (obj.offsetParent) {
+    do {
+      left+=obj.offsetLeft;
+      top+=obj.offsetTop;
+    } while (obj=obj.offsetParent);
+  }
+  return new Coordinates(left,top);
+}
+
 function removeChildrenFromElement(element) {
   if (element.hasChildNodes()) {
     while (element.childNodes.length>0) {
@@ -90,6 +116,7 @@ function createBoard() {
       var ball=new Ball();
       ball.number=createRandomExclusive(STARTING_BALL_MAX)+1;
       col.push(ball);
+      debug(ball.number);
     }
   }
 }
@@ -106,13 +133,13 @@ function detectSelection(coor) {
 
 function clearBoard() {
   var boardDisplay=document.getElementById("board");
-//  removeChildrenFromElement(boardDisplay);
+  removeChildrenFromElement(boardDisplay);
 }
 
 function drawBall(ball) {
   var ballDisplay=document.createElement("div");
   ballDisplay.setAttribute("class", "ball");
-  ballDisplay.appendChild(document.createTextNode(ball.number));  
+  ballDisplay.appendChild(document.createTextNode(ball.number));
   return ballDisplay;
 }
 
@@ -150,65 +177,60 @@ function debug(text) {
 // Interaction
 ///////////////////
 
+function getBallFromCoordinates(coor) {
+  var x=Math.floor(coor.x / 320);
+  var y=Math.floor(coor.x / 320);
+  debug(x + ' ' + y);
+  var col=board[x];
+  return col[y];
+}
+
 // Get coordinates from a touch event
 function getCoordinatesTouchEvent(ev) {
   var x;
   var y;
   if (ev.touches && ev.touches.length) { // Multi touch
-    //debug('multi');
     x = ev.touches[0].clientX;
     y = ev.touches[0].clientY;
   } else { // Single touch
-    //debug('single');
-    x = e.clientX;
-    y = e.clientY;
+    x = ev.clientX;
+    y = ev.clientY;
   }
-
-  // debug(x + "," + y);
-  
   return new Coordinates(x, y);
 }
 
 function touchMove(ev) {
   ev.preventDefault();
-//  var coor=getCoordinatesTouchEvent(ev);
-//  detectSelection(coor);
+  var coor=getCoordinatesTouchEvent(ev);
+  var ball=getBallFromCoordinates(coor);
+  ball.number='99';
+  drawBoard();
 }
 
 function touchStart(ev) {
-//  var coor=getCoordinatesTouchEvent(ev);
-//  detectSelection(coor);
+  var coor=getCoordinatesTouchEvent(ev);
+}
+
+function touchEnd(ev) {
+  // Determine swipe
 }
 
 function mouseMove (ev) {
-  var x;
-  var y;
-  
-  if (ev.offsetX || ev.offsetX == 0) {
-    x = ev.offsetX;
-  }
-  if (ev.offsetY || ev.offsetY == 0) {
-    y = ev.offsetY;
-  }
-  var coor=new Coordinates(x, y);
-  
-  //debug(x + "," + y);
-  
-  // Check if inside ball  
-  //detectSelection(coor);
+  // Determine swipe
 }
+
 ///////////////////
 // Set-up
 ///////////////////
 
 function init() {
-
   var board=document.getElementById("board");
 
   // Set listeners
   //board.addEventListener('mousemove', mouseMove, false);
   board.addEventListener('touchstart', touchStart, false);
   board.addEventListener('touchmove', touchMove, false);
+  board.addEventListener('touchend', touchEnd, false);
   
   newGame();
 }
@@ -219,15 +241,11 @@ function newGame() {
   isGameOver=false;
   isGameWon=false;
   points=0;
-  balls=new Array();
+  board=new Array();
   debug('');
   
   createBoard();
-
-  // Update points
-  updatePointsDisplay();  
-
-  // Draw board and start animation
+  updatePointsDisplay();
   drawBoard();
 }
 
