@@ -181,11 +181,12 @@ function debug(text) {
 ///////////////////
 
 function getBallFromCoordinates(coor) {
+  var boardDisplay=document.getElementById("board");
   boardCoor=findPos(board);
   var x=Math.floor( (coor.x-boardCoor.x) / COL_WIDTH);
   var y=Math.floor( (coor.y-boardCoor.y) / COL_WIDTH);
-  debug ( boardCoor.x + ',' +  boardCoor.y);
-  //debug(x + ' ' + y);
+  //debug ( boardCoor.x + ',' +  boardCoor.y);
+  debug(x + ' ' + y);
   var col=board[x];
   return col[y];
 }
