@@ -8,7 +8,6 @@
 
 /* width, height, and line-height will be same. border-radius will be half of width/height */
 .ball {
-  background-color:#0000ff;
   width: 30px;
   height: 30px;
   border-radius: 15px;
@@ -20,16 +19,12 @@
   color: #ffffff;
 }
 
-.ball2 {
+.selected {
   background-color:#00ff00;
-  width: 30px;
-  height: 30px;
-  border-radius: 15px;
-  text-align: center;
-  vertical-align: middle;
-  line-height: 30px;
-  margin: 3px;
-  font-weight:bold;
+}
+
+.active {
+  background-color:#0000ff;
 }
 
 .column {
@@ -117,7 +112,8 @@ function createBoard() {
       var ball=new Ball();
       ball.number=createRandomExclusive(STARTING_BALL_MAX)+1;
       col.push(ball);
-      debug(ball.number);
+      ball.x=i;
+      ball.y=j;
     }
   }
 }
@@ -139,11 +135,12 @@ function clearBoard() {
 
 function drawBall(ball) {
   var ballDisplay=document.createElement("div");
-  
-  if (!ball.selected) {
-    ballDisplay.setAttribute("class", "ball");
+  ballDisplay.setAttribute("id", "ball-" + ball.x + '-' + ball.y);
+      
+  if (ball.selected) {
+    ballDisplay.setAttribute("class", "ball selected");
   } else {
-    ballDisplay.setAttribute("class", "ball2");  
+    ballDisplay.setAttribute("class", "ball active");  
   }
   
   ballDisplay.appendChild(document.createTextNode(ball.number));
@@ -151,9 +148,7 @@ function drawBall(ball) {
 }
 
 function drawBalls() {
-  // var colWidth= (1/board.length)*100 + "%";
   var colWidth= "36px"  // calc this?;
-  //debug (colWidth);
   var boardDisplay=document.getElementById("board");
   for (var i=0;i<board.length;i++) {
     var col=board[i];
@@ -187,7 +182,7 @@ function debug(text) {
 function getBallFromCoordinates(coor) {
   var x=Math.floor( (coor.x-boardCoor.x) / 36);
   var y=Math.floor( (coor.y-boardCoor.y) / 36);
-  debug(x + ' ' + y);
+  //debug(x + ' ' + y);
   var col=board[x];
   return col[y];
 }
@@ -203,18 +198,22 @@ function getCoordinatesTouchEvent(ev) {
     x = ev.clientX;
     y = ev.clientY;
   }
-//  debug(x + ' ' + y);
+  // debug(x + ' ' + y);
   return new Coordinates(x, y);
 }
 
 function touchMove(ev) {
   ev.preventDefault();
   var coor=getCoordinatesTouchEvent(ev);
-  debug('4');
   var ball=getBallFromCoordinates(coor);
   if (ball) {
     ball.selected=true;
-    drawBoard();  // just update cell?
+    
+    // Move to separate method...
+    var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
+    ballDisplay.setAttribute("class", "ball selected");  
+    
+    // drawBoard();
   }
 }
 
@@ -223,7 +222,10 @@ function touchStart(ev) {
   var ball=getBallFromCoordinates(coor);
   if (ball) {
     ball.selected=true;
-    drawBoard();  // just update cell?
+    
+    // Move to separate method...
+    var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
+    ballDisplay.setAttribute("class", "ball selected");  
   }
 }
 
@@ -275,7 +277,7 @@ function newGame() {
   <div style="border:1px #000000 solid;" id="board" width="320" height="320">
   </div>
   <div style="float:left;margin-top:1em;">
-    <button onclick="newGame();return false;">New Game v1</button><br/><br/>
+    <button onclick="newGame();return false;">New Game</button><br/><br/>
   </div>
   <div id="debug"></div>
 </div>
