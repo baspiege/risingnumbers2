@@ -6,15 +6,14 @@
 <title>Swipe Numbers!</title>
 <style type="text/css">
 
-/* width, height, and line-height will be same. border-radius will be half of width/height */
+/* width, height, and line-height will be same. */
 .ball {
-  width: 30px;
-  height: 30px;
-  border-radius: 15px;
+  width: 45px;
+  height: 45px;
+  line-height: 45px;
+  border-radius: 50%;
   text-align: center;
   vertical-align: middle;
-  line-height: 30px;
-  margin: 5px;
   font-weight:bold;
   color: #ffffff;
 }
@@ -39,12 +38,15 @@
 /*
 TODO
 
-Swipe
-Check if adding to number.
-If so, remove numbers, add score. Shift down.
+Try
+* Swipe must be 75% near center of circle
+* Check if adding to number.
+* If so, remove numbers, add score. Shift down.
 
-Start at 11. Need 11 11 times. Then 12 twelve times.
-Color numbers.  Selection yellow?
+Ideas
+* Start at 11. Need 11 11 times. Then 12 twelve times.
+* Color numbers.  Selection yellow?
+
 */
 
 function Ball() {
@@ -64,7 +66,7 @@ function Coordinates(x, y) {
 var BOARD_COL=7;
 var BOARD_ROW=7;
 var STARTING_BALL_MAX=10;
-var COL_WIDTH=40;
+var COL_WIDTH=45;
 
 // Game variables
 var isGameOver=false;
@@ -149,7 +151,7 @@ function drawBall(ball) {
 }
 
 function drawBalls() {
-  var colWidth= COL_WIDTH + "px"  // calc this?;
+  var colWidth= COL_WIDTH + "px"
   var boardDisplay=document.getElementById("board");
   for (var i=0;i<board.length;i++) {
     var col=board[i];
@@ -185,10 +187,19 @@ function getBallFromCoordinates(coor) {
   boardCoor=findPos(board);
   var x=Math.floor( (coor.x-boardCoor.x) / COL_WIDTH);
   var y=Math.floor( (coor.y-boardCoor.y) / COL_WIDTH);
-  //debug ( boardCoor.x + ',' +  boardCoor.y);
-  debug(x + ' ' + y);
   var col=board[x];
-  return col[y];
+  var nearestBall=col[y];
+  
+  // Check if 75% close
+  var dY=coor.y-nearestBall.y;
+  var dX=coor.x-nearestBall.x;
+  var close=Math.sqrt((dY*dY)+(dX*dX))<=.75*COL_WIDTH;
+  
+  if (close) {
+    return nearestBall;
+  } else {
+    return null;
+  }
 }
 
 // Get coordinates from a touch event
