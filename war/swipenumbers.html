@@ -188,17 +188,17 @@ function getBallFromCoordinates(coor) {
   var x=Math.floor( (coor.x-boardCoor.x) / COL_WIDTH);
   var y=Math.floor( (coor.y-boardCoor.y) / COL_WIDTH);
   var col=board[x];
-  var nearestBall=col[y];
-  
+  return col[y];
+}
+
   // Check if 75% close
-  var dY=coor.y-nearestBall.y;
-  var dX=coor.x-nearestBall.x;
-  var close=Math.sqrt((dY*dY)+(dX*dX))<=.75*COL_WIDTH;
-  
-  if (close) {
-    return nearestBall;
+function isCloseEnough(coor, ball) {
+  if (ball) {
+    var dY=coor.y-(ball.y*COL_WIDTH + COL_WIDTH/2);
+    var dX=coor.x-(ball.x*COL_WIDTH + COL_WIDTH/2);
+    return Math.sqrt((dY*dY)+(dX*dX))<=.75*COL_WIDTH;  
   } else {
-    return null;
+    return false;
   }
 }
 
@@ -221,7 +221,7 @@ function touchMove(ev) {
   ev.preventDefault();
   var coor=getCoordinatesTouchEvent(ev);
   var ball=getBallFromCoordinates(coor);
-  if (ball) {
+  if (isCloseEnough(coor,ball)) {
     ball.selected=true;
     
     // Move to separate method...
@@ -233,7 +233,7 @@ function touchMove(ev) {
 function touchStart(ev) {
   var coor=getCoordinatesTouchEvent(ev);
   var ball=getBallFromCoordinates(coor);
-  if (ball) {
+  if (isCloseEnough(coor,ball)) {
     ball.selected=true;
     
     // Move to separate method...
