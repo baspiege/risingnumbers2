@@ -26,6 +26,10 @@
   background-color:#0000ff;
 }
 
+.move {
+  background-color:#ff0000;
+}
+
 .column {
  float: left;
 }
@@ -39,9 +43,8 @@
 TODO
 
 Try
-* Swipe must be 75% near center of circle
-* Check if adding to number.
-* If so, remove numbers, add score. Shift down.
+* Find direction... switch
+* Check board.  Remove numbers that add to goal.  Shift down.  Add new numbers.
 
 Ideas
 * Start at 11. Need 11 11 times. Then 12 twelve times.
@@ -73,7 +76,6 @@ var isGameOver=false;
 var isGameWon=false;
 var points=0;
 var board=new Array();
-var boardCoor;
 
 ///////////////////
 // Utilities
@@ -184,23 +186,26 @@ function debug(text) {
 
 function getBallFromCoordinates(coor) {
   var boardDisplay=document.getElementById("board");
-  boardCoor=findPos(board);
+  var boardCoor=findPos(boardDisplay);
   var x=Math.floor( (coor.x-boardCoor.x) / COL_WIDTH);
   var y=Math.floor( (coor.y-boardCoor.y) / COL_WIDTH);
+  
+  debug ( coor.x + ',' + boardCoor.x + ' ' + coor.y + ',' + boardCoor.y );
   var col=board[x];
   return col[y];
 }
 
-  // Check if 75% close
+/* Remove if not used...
 function isCloseEnough(coor, ball) {
   if (ball) {
     var dY=coor.y-(ball.y*COL_WIDTH + COL_WIDTH/2);
     var dX=coor.x-(ball.x*COL_WIDTH + COL_WIDTH/2);
-    return Math.sqrt((dY*dY)+(dX*dX))<=.75*COL_WIDTH;  
+    return Math.sqrt((dY*dY)+(dX*dX))<=.40*COL_WIDTH;  
   } else {
     return false;
   }
 }
+*/
 
 // Get coordinates from a touch event
 function getCoordinatesTouchEvent(ev) {
@@ -213,7 +218,7 @@ function getCoordinatesTouchEvent(ev) {
     x = ev.clientX;
     y = ev.clientY;
   }
-  // debug(x + ' ' + y);
+  //debug(x + ' ' + y);
   return new Coordinates(x, y);
 }
 
@@ -221,19 +226,19 @@ function touchMove(ev) {
   ev.preventDefault();
   var coor=getCoordinatesTouchEvent(ev);
   var ball=getBallFromCoordinates(coor);
-  if (isCloseEnough(coor,ball)) {
+  if (ball) {
     ball.selected=true;
     
     // Move to separate method...
     var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-    ballDisplay.setAttribute("class", "ball selected");
+    ballDisplay.setAttribute("class", "ball move");
   }
 }
 
 function touchStart(ev) {
   var coor=getCoordinatesTouchEvent(ev);
   var ball=getBallFromCoordinates(coor);
-  if (isCloseEnough(coor,ball)) {
+  if (ball) {
     ball.selected=true;
     
     // Move to separate method...
@@ -259,9 +264,9 @@ function init() {
 
   // Set listeners
   //board.addEventListener('mousemove', mouseMove, false);
-  document.addEventListener('touchstart', touchStart, false);
-  document.addEventListener('touchmove', touchMove, false);
-  document.addEventListener('touchend', touchEnd, false);
+  board.addEventListener('touchstart', touchStart, false);
+  board.addEventListener('touchmove', touchMove, false);
+  board.addEventListener('touchend', touchEnd, false);
   
   newGame();
 }
