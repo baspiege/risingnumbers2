@@ -1,0 +1,53 @@
+<!DOCTYPE HTML>
+<!-- Copyright 2014 Brian Spiegel -->
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+<title>Swipe Numbers!</title>
+<style type="text/css">
+
+</style>
+</head>
+<body>
+<script>
+
+var words=["delight","weave","timber","bolt"];
+
+/*
+TODO
+
+till
+accurately
+plea
+bulb
+flying
+sustainable
+devil
+bolt
+
+*/
+
+function checkIfWord() {
+  var wordCheck=document.getElementById("wordCheck");
+  var word=wordCheck.value;
+  
+  if (words.indexOf(word)>0) {
+    alert('found');
+  }
+}
+
+function init() {
+  var wordCheck=document.getElementById("wordCheck");
+  wordCheck.addEventListener('change', checkIfWord, false);
+}
+
+</script>
+<div>
+
+<input id='wordCheck' type='text'> </input>
+</div> 
+<script>
+init();
+</script>
+</body>
+</html>
