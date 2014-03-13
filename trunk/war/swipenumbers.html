@@ -26,8 +26,8 @@
   background-color:#0000ff;
 }
 
-.move {
-  background-color:#ff0000;
+.removed {
+  background-color:#ffffff;
 }
 
 .column {
@@ -41,6 +41,13 @@
 
 /*
 TODO
+
+Make board, determine win...
+swipe two randomly...  add number to goal... shift board down
+goals at the bottom
+repeat till 0... put number back...
+
+
 
 Try
 * Find direction... switch
@@ -57,6 +64,7 @@ function Ball() {
   this.y=0;
   this.number=0;
   this.selected=false;
+  this.removed=false;
 }
 
 // Coordinates for touch movement
@@ -67,7 +75,7 @@ function Coordinates(x, y) {
 
 // Constants
 var BOARD_COL=7;
-var BOARD_ROW=7;
+var BOARD_ROW=8;
 var STARTING_BALL_MAX=10;
 var COL_WIDTH=45;
 
@@ -129,6 +137,18 @@ function detectSelection(coor) {
   }  
 }
 
+function removeSelected() {
+  for (var i=0;i<board.length;i++) {
+    var col=board[i];
+    for (var j=0;j<col.length;j++) {
+      if (col[j].selected) {
+        col[j].removed;
+      }
+    }
+  }
+}
+
+
 ///////////////////
 // Draw
 ///////////////////
@@ -142,7 +162,9 @@ function drawBall(ball) {
   var ballDisplay=document.createElement("div");
   ballDisplay.setAttribute("id", "ball-" + ball.x + '-' + ball.y);
       
-  if (ball.selected) {
+  if (ball.removed) {
+    ballDisplay.setAttribute("class", "ball removed");
+  } else if (ball.selected) {
     ballDisplay.setAttribute("class", "ball selected");
   } else {
     ballDisplay.setAttribute("class", "ball active");  
@@ -231,7 +253,7 @@ function touchMove(ev) {
     
     // Move to separate method...
     var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-    ballDisplay.setAttribute("class", "ball move");
+    ballDisplay.setAttribute("class", "ball selected");
   }
 }
 
@@ -248,7 +270,7 @@ function touchStart(ev) {
 }
 
 function touchEnd(ev) {
-  // Determine swipe
+//  removeSelected();
 }
 
 function mouseMove (ev) {
@@ -264,9 +286,9 @@ function init() {
 
   // Set listeners
   //board.addEventListener('mousemove', mouseMove, false);
-  board.addEventListener('touchstart', touchStart, false);
-  board.addEventListener('touchmove', touchMove, false);
-  board.addEventListener('touchend', touchEnd, false);
+  document.addEventListener('touchstart', touchStart, false);
+  document.addEventListener('touchmove', touchMove, false);
+  document.addEventListener('touchend', touchEnd, false);
   
   newGame();
 }
