@@ -42,14 +42,10 @@
 /*
 TODO
 
-Add mouse control
-
 Make board, determine win...
 swipe two randomly...  add number to goal... shift board down
 goals at the bottom
 repeat till 0... put number back...
-
-
 
 Try
 * Find direction... switch
@@ -86,6 +82,8 @@ var isGameOver=false;
 var isGameWon=false;
 var points=0;
 var board=new Array();
+
+var mouseSelecting=false;
 
 ///////////////////
 // Utilities
@@ -173,7 +171,7 @@ function checkSelection() {
     }
   }
   
-  debug (count + ' ' + goal);
+  //debug (count + ' ' + goal);
   if (count==goal) {
     points+=goal;
     updatePointsDisplay();
@@ -193,6 +191,8 @@ function clearBoard() {
 function drawBall(ball) {
   var ballDisplay=document.createElement("div");
   ballDisplay.setAttribute("id", "ball-" + ball.x + '-' + ball.y);
+  ballDisplay.setAttribute("boardX", ball.x);
+  ballDisplay.setAttribute("boardY", ball.y);
       
   if (ball.removed) {
     ballDisplay.setAttribute("class", "ball removed");
@@ -203,6 +203,9 @@ function drawBall(ball) {
   }
   
   ballDisplay.appendChild(document.createTextNode(ball.number));
+
+  ballDisplay.addEventListener('mousemove', mouseMove, false);
+  
   return ballDisplay;
 }
 
@@ -235,7 +238,39 @@ function debug(text) {
 }
 
 ///////////////////
-// Interaction
+// Mouse Interaction
+///////////////////
+
+function mouseDown(e) {
+  e.preventDefault();
+  mouseSelecting=true;
+}
+
+function mouseMove(e) {
+  e.preventDefault();
+  var boardX=e.target.getAttribute("boardX");
+  var boardY=e.target.getAttribute("boardY");
+
+  var col=board[boardX];
+  var ball=col[boardY];
+  
+  if (mouseSelecting && ball && !ball.removed) {
+    ball.selected=true;
+    
+    // Move to separate method...
+    var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
+    ballDisplay.setAttribute("class", "ball selected");  
+  }
+}
+
+function mouseUp(e) {
+  e.preventDefault();
+  mouseSelecting=false;
+  checkSelection();
+}
+
+///////////////////
+// Touch Interaction
 ///////////////////
 
 function getBallFromCoordinates(coor) {
@@ -244,22 +279,10 @@ function getBallFromCoordinates(coor) {
   var x=Math.floor( (coor.x-boardCoor.x) / COL_WIDTH);
   var y=Math.floor( (coor.y-boardCoor.y) / COL_WIDTH);
   
-  debug ( coor.x + ',' + boardCoor.x + ' ' + coor.y + ',' + boardCoor.y );
+  //debug ( coor.x + ',' + boardCoor.x + ' ' + coor.y + ',' + boardCoor.y );
   var col=board[x];
   return col[y];
 }
-
-/* Remove if not used...
-function isCloseEnough(coor, ball) {
-  if (ball) {
-    var dY=coor.y-(ball.y*COL_WIDTH + COL_WIDTH/2);
-    var dX=coor.x-(ball.x*COL_WIDTH + COL_WIDTH/2);
-    return Math.sqrt((dY*dY)+(dX*dX))<=.40*COL_WIDTH;  
-  } else {
-    return false;
-  }
-}
-*/
 
 // Get coordinates from a touch event
 function getCoordinatesTouchEvent(ev) {
@@ -276,20 +299,7 @@ function getCoordinatesTouchEvent(ev) {
   return new Coordinates(x, y);
 }
 
-function touchMove(ev) {
-  ev.preventDefault();
-  var coor=getCoordinatesTouchEvent(ev);
-  var ball=getBallFromCoordinates(coor);
-  if (ball && !ball.removed) {
-    ball.selected=true;
-    
-    // Move to separate method...
-    var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-    ballDisplay.setAttribute("class", "ball selected");
-  }
-}
-
-function touchStart(ev) {
+function touchSelection(ev) {
   var coor=getCoordinatesTouchEvent(ev);
   var ball=getBallFromCoordinates(coor);
   if (ball && !ball.removed) {
@@ -301,13 +311,18 @@ function touchStart(ev) {
   }
 }
 
+function touchMove(ev) {
+  ev.preventDefault();
+  touchSelection(ev);
+}
+
+function touchStart(ev) {
+  touchSelection(ev);
+}
+
 function touchEnd(ev) {
   //removeSelected();
   checkSelection();
-}
-
-function mouseMove (ev) {
-  // Determine swipe
 }
 
 ///////////////////
@@ -315,13 +330,16 @@ function mouseMove (ev) {
 ///////////////////
 
 function init() {
-  var board=document.getElementById("board");
 
-  // Set listeners
-  //board.addEventListener('mousemove', mouseMove, false);
+  // Touch
   document.addEventListener('touchstart', touchStart, false);
   document.addEventListener('touchmove', touchMove, false);
   document.addEventListener('touchend', touchEnd, false);
+
+  // Mouse
+  var board=document.getElementById("board");
+  board.addEventListener('mousedown', mouseDown, false);
+  board.addEventListener('mouseup', mouseUp, false);
   
   newGame();
 }
@@ -333,7 +351,7 @@ function newGame() {
   isGameWon=false;
   points=0;
   board=new Array();
-  debug('');
+  //debug('');
   
   createBoard();
   updatePointsDisplay();
