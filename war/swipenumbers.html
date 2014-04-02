@@ -6,6 +6,27 @@
 <title>Swipe Numbers!</title>
 <style type="text/css">
 
+.unselect
+{
+background-color:#0000ff;
+-webkit-animation:unselectBackground 1s; /* Chrome, Safari, Opera */
+animation:unselectBackground 1s;
+}
+
+/* Chrome, Safari, Opera */
+@-webkit-keyframes unselectBackground
+{
+from {background-color:#00ff00;}
+to {background-color:#0000ff;}
+}
+
+/* Standard syntax */
+@keyframes unselectBackground
+{
+from {background-color:#00ff00;}
+to {background-color:#0000ff;}
+}
+
 /* width, height, and line-height will be same. */
 .ball {
   width: 45px;
@@ -206,12 +227,15 @@ function checkSelection() {
       for (var j=0;j<col.length;j++) {
         var ball=col[j];
 
+        if (ball.selected) {
           ball.selected=false;
-       
-        
+
+          var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
+          ballDisplay.setAttribute("class", "ball unselect");          
+        }
       }
     }
-        drawBoard();
+//        drawBoard();
   }
 }
 
