@@ -6,6 +6,28 @@
 <title>Swipe Numbers!</title>
 <style type="text/css">
 
+.removeAnimation
+{
+background-color:#0000ff;
+-webkit-animation:reduceSizeToZero 1s; /* Chrome, Safari, Opera */
+animation:reduceSizeToZero 1s;
+}
+
+/* Chrome, Safari, Opera */
+@-webkit-keyframes reduceSizeToZero
+{
+from {width: 45px; height:45px;}
+to {width: 0px; height:0;}
+}
+
+/* Standard syntax */
+@keyframes reduceSizeToZero
+{
+from {width: 45px; height:45px;}
+to {width: 0px; height:0;}
+}
+
+
 .unselect
 {
 background-color:#0000ff;
@@ -63,9 +85,9 @@ to {background-color:#0000ff;}
 /*
 TODO
 
-swipe... shift down... flash for a second... animation that balls leaving.. new balls shifting down...
+reindex balls when moved?
 
-when shifting down... splice from array, add new balls... and redraw board...
+when shifting down... add new balls...
 
 Make board, determine win...
 swipe two randomly...  add number to goal... shift board down
@@ -177,6 +199,21 @@ function removeSelected() {
   }
 }
 
+function removeSelectedFromBoard() {
+  for (var i=0;i<board.length;i++) {
+    var col=board[i];
+    for (var j=col.length-1;j>-1;j--) {
+      var ball=col[j];
+      if (ball.selected) {
+
+        ball.selected=false;
+        col.splice(j,1);  // do this after 1 second
+        }
+    }
+  }
+  drawBoard();
+}
+
 function checkSelection() {
   var goal=12;
   var count=0;
@@ -207,17 +244,23 @@ function checkSelection() {
         var ball=col[j];
         if (ball.selected) {
 
-          ball.selected=false;
-          col.splice(j,1);
+//          ball.selected=false;
+//          col.splice(j,1);  // do this after 1 second
+
+          var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
+          ballDisplay.setAttribute("class", "ball removeAnimation");          
+      
 
         }
       }
     }
     
+    
+    setTimeout(removeSelectedFromBoard,1000)
     // replace board if needed
     //            ball.number=createRandomExclusive(STARTING_BALL_MAX)+1;
     
-    drawBoard();
+//    drawBoard();
   }
   
   if (count!=goal) {
