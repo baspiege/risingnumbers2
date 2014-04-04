@@ -6,47 +6,36 @@
 <title>Swipe Numbers!</title>
 <style type="text/css">
 
-.removeAnimation
-{
-background-color:#0000ff;
--webkit-animation:reduceSizeToZero 1s; /* Chrome, Safari, Opera */
-animation:reduceSizeToZero 1s;
+.removeAnimation {
+  background-color:#0000ff;
+  -webkit-animation:reduceSizeToZero 1s;
+  animation:reduceSizeToZero 1s;
 }
 
-/* Chrome, Safari, Opera */
-@-webkit-keyframes reduceSizeToZero
-{
-from {width: 45px; height:45px;}
-to {width: 0px; height:0;}
+@-webkit-keyframes reduceSizeToZero {
+  from {width: 45px; height:45px; line-height: 45px;}
+  to {width: 0px; height:0; line-height: 0;}
 }
 
-/* Standard syntax */
-@keyframes reduceSizeToZero
-{
-from {width: 45px; height:45px;}
-to {width: 0px; height:0;}
+@keyframes reduceSizeToZero {
+  from {width: 45px; height:45px; line-height: 45px;}
+  to {width: 0px; height:0; line-height: 0;}
 }
 
-
-.unselect
-{
-background-color:#0000ff;
--webkit-animation:unselectBackground 1s; /* Chrome, Safari, Opera */
-animation:unselectBackground 1s;
+.unselect {
+  background-color:#0000ff;
+  -webkit-animation:unselectBackground 1s;
+  animation:unselectBackground 1s;
 }
 
-/* Chrome, Safari, Opera */
-@-webkit-keyframes unselectBackground
-{
-from {background-color:#00ff00;}
-to {background-color:#0000ff;}
+@-webkit-keyframes unselectBackground {
+  from {background-color:#00ff00;}
+  to {background-color:#0000ff;}
 }
 
-/* Standard syntax */
-@keyframes unselectBackground
-{
-from {background-color:#00ff00;}
-to {background-color:#0000ff;}
+@keyframes unselectBackground {
+  from {background-color:#00ff00;}
+  to {background-color:#0000ff;}
 }
 
 /* width, height, and line-height will be same. */
@@ -117,9 +106,6 @@ var BOARD_ROW=8;
 var STARTING_BALL_MAX=10;
 var COL_WIDTH=45;
 
-// Game variables
-var isGameOver=false;
-var isGameWon=false;
 var points=0;
 var board=new Array();
 
@@ -157,7 +143,24 @@ function removeChildrenFromElement(element) {
 // Board
 ///////////////////
 
+function checkSelection() {
+  var goal=12;
+  var count=getSelectionCount();
+
+  if (count==goal) {
+    points+=goal;
+    updatePointsDisplay();
+    removeBallAnimation();
+    setTimeout(removeSelectedFromBoard,1000);
+  }
+  
+  if (count!=goal) {
+    undoSelected();
+  }
+}
+
 function createBoard() {
+  board=new Array();
   for (var i=0;i<BOARD_COL;i++) {
     var col=new Array();
     board.push(col);
@@ -171,24 +174,18 @@ function createBoard() {
   }
 }
 
-function detectSelection(coor) {
-  for (var i=0;i<board.length;i++) {
-    // Cols?
-  }  
-}
-
-function removeSelected() {
+function getSelectionCount() {
+  var count=0;
   for (var i=0;i<board.length;i++) {
     var col=board[i];
     for (var j=0;j<col.length;j++) {
       var ball=col[j];
       if (ball.selected) {
-        ball.removed; 
-        var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-        ballDisplay.setAttribute("class", "ball removed");
+        count+=ball.number;
       }
     }
   }
+  return count;
 }
 
 function reindexBoard() {
@@ -217,80 +214,24 @@ function removeSelectedFromBoard() {
   drawBoard();
 }
 
-function checkSelection() {
-  var goal=12;
-  var count=0;
-  
+function undoSelected() {
   for (var i=0;i<board.length;i++) {
     var col=board[i];
     for (var j=0;j<col.length;j++) {
       var ball=col[j];
       if (ball.selected) {
-        count+=ball.number;
-        //ball.selected=false;
-        //var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-        //ballDisplay.setAttribute("class", "ball removed");
+        ball.selected=false; 
+        undoSelectedBallDisplay(ball);
       }
     }
-  }
-  
-  //debug (count + ' ' + goal);
-  if (count==goal) {
-    points+=goal;
-    updatePointsDisplay();
-  }
-  
-  if (count==goal) {
-    for (var i=0;i<board.length;i++) {
-      var col=board[i];
-      for (var j=col.length-1;j>-1;j--) {
-        var ball=col[j];
-        if (ball.selected) {
-
-//          ball.selected=false;
-//          col.splice(j,1);  // do this after 1 second
-
-          var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-          ballDisplay.setAttribute("class", "ball removeAnimation");          
-      
-
-        }
-      }
-    }
-    
-    
-    setTimeout(removeSelectedFromBoard,1000)
-    // replace board if needed
-    //            ball.number=createRandomExclusive(STARTING_BALL_MAX)+1;
-    
-//    drawBoard();
-  }
-  
-  if (count!=goal) {
-    
-    for (var i=0;i<board.length;i++) {
-      var col=board[i];
-      for (var j=0;j<col.length;j++) {
-        var ball=col[j];
-
-        if (ball.selected) {
-          ball.selected=false;
-
-          var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-          ballDisplay.setAttribute("class", "ball unselect");          
-        }
-      }
-    }
-//        drawBoard();
   }
 }
-
 
 ///////////////////
 // Draw
 ///////////////////
 
-function clearBoard() {
+function clearBoardDisplay() {
   var boardDisplay=document.getElementById("board");
   removeChildrenFromElement(boardDisplay);
 }
@@ -310,9 +251,7 @@ function drawBall(ball) {
   }
   
   ballDisplay.appendChild(document.createTextNode(ball.number));
-
   ballDisplay.addEventListener('mousemove', mouseMove, false);
-  
   return ballDisplay;
 }
 
@@ -332,8 +271,31 @@ function drawBalls() {
 }
 
 function drawBoard() {
-    clearBoard();
+    clearBoardDisplay();
     drawBalls();
+}
+
+function removeBallAnimation() {
+  for (var i=0;i<board.length;i++) {
+    var col=board[i];
+    for (var j=col.length-1;j>-1;j--) {
+      var ball=col[j];
+      if (ball.selected) {
+        var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
+        ballDisplay.setAttribute("class", "ball removeAnimation");          
+      }
+    }
+  }
+}
+
+function selectBallDisplay(ball) {
+  var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
+  ballDisplay.setAttribute("class", "ball selected");
+}
+
+function undoSelectedBallDisplay(ball) {
+  var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
+  ballDisplay.setAttribute("class", "ball unselect");
 }
 
 function updatePointsDisplay() {
@@ -361,12 +323,9 @@ function mouseMove(e) {
   var col=board[boardX];
   var ball=col[boardY];
   
-  if (mouseSelecting && ball && !ball.removed) {
+  if (mouseSelecting && ball) {
     ball.selected=true;
-    
-    // Move to separate method...
-    var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-    ballDisplay.setAttribute("class", "ball selected");  
+    selectBallDisplay(ball);
   }
 }
 
@@ -385,8 +344,6 @@ function getBallFromCoordinates(coor) {
   var boardCoor=findPos(boardDisplay);
   var x=Math.floor( (coor.x-boardCoor.x) / COL_WIDTH);
   var y=Math.floor( (coor.y-boardCoor.y) / COL_WIDTH);
-  
-  //debug ( coor.x + ',' + boardCoor.x + ' ' + coor.y + ',' + boardCoor.y );
   var col=board[x];
   return col[y];
 }
@@ -402,20 +359,7 @@ function getCoordinatesTouchEvent(ev) {
     x = ev.clientX;
     y = ev.clientY;
   }
-  //debug(x + ' ' + y);
   return new Coordinates(x, y);
-}
-
-function touchSelection(ev) {
-  var coor=getCoordinatesTouchEvent(ev);
-  var ball=getBallFromCoordinates(coor);
-  if (ball && !ball.removed) {
-    ball.selected=true;
-    
-    // Move to separate method...
-    var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-    ballDisplay.setAttribute("class", "ball selected");  
-  }
 }
 
 function touchMove(ev) {
@@ -423,12 +367,20 @@ function touchMove(ev) {
   touchSelection(ev);
 }
 
+function touchSelection(ev) {
+  var coor=getCoordinatesTouchEvent(ev);
+  var ball=getBallFromCoordinates(coor);
+  if (ball) {
+    ball.selected=true;
+    selectBallDisplay(ball);
+  }
+}
+
 function touchStart(ev) {
   touchSelection(ev);
 }
 
 function touchEnd(ev) {
-  //removeSelected();
   checkSelection();
 }
 
@@ -452,19 +404,11 @@ function init() {
 }
 
 function newGame() {
-
-  // Reset variables
-  isGameOver=false;
-  isGameWon=false;
-  points=0;
-  board=new Array();
-  //debug('');
-  
+  points=0;  
   createBoard();
   updatePointsDisplay();
   drawBoard();
 }
-
 
 </script>
 <div style="width:320px">
