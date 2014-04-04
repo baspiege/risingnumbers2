@@ -152,8 +152,9 @@ function checkSelection() {
     updatePointsDisplay();
     removeBallAnimation();
     setTimeout(removeSelectedFromBoard,1000);
+    fillInBoard();
   }
-  
+
   if (count!=goal) {
     undoSelected();
   }
@@ -170,6 +171,21 @@ function createBoard() {
       col.push(ball);
       ball.x=i;
       ball.y=j;
+    }
+  }
+}
+
+function fillInBoard() {
+  for (var i=0;i<BOARD_COL;i++) {
+    var col=board[i];
+    for (var j=0;j<BOARD_ROW;j++) {
+      if (!(j in col)) {
+        ball=new Ball();
+        ball.number=createRandomExclusive(STARTING_BALL_MAX)+1;
+        col.push(ball);
+        ball.x=i;
+        ball.y=j;
+      }
     }
   }
 }
@@ -211,6 +227,7 @@ function removeSelectedFromBoard() {
     }
   }
   reindexBoard();
+  fillInBoard();
   drawBoard();
 }
 
@@ -220,7 +237,7 @@ function undoSelected() {
     for (var j=0;j<col.length;j++) {
       var ball=col[j];
       if (ball.selected) {
-        ball.selected=false; 
+        ball.selected=false;
         undoSelectedBallDisplay(ball);
       }
     }
@@ -241,15 +258,15 @@ function drawBall(ball) {
   ballDisplay.setAttribute("id", "ball-" + ball.x + '-' + ball.y);
   ballDisplay.setAttribute("boardX", ball.x);
   ballDisplay.setAttribute("boardY", ball.y);
-      
+
   if (ball.removed) {
     ballDisplay.setAttribute("class", "ball removed");
   } else if (ball.selected) {
     ballDisplay.setAttribute("class", "ball selected");
   } else {
-    ballDisplay.setAttribute("class", "ball active");  
+    ballDisplay.setAttribute("class", "ball active");
   }
-  
+
   ballDisplay.appendChild(document.createTextNode(ball.number));
   ballDisplay.addEventListener('mousemove', mouseMove, false);
   return ballDisplay;
@@ -282,7 +299,7 @@ function removeBallAnimation() {
       var ball=col[j];
       if (ball.selected) {
         var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-        ballDisplay.setAttribute("class", "ball removeAnimation");          
+        ballDisplay.setAttribute("class", "ball removeAnimation");
       }
     }
   }
@@ -322,7 +339,7 @@ function mouseMove(e) {
 
   var col=board[boardX];
   var ball=col[boardY];
-  
+
   if (mouseSelecting && ball) {
     ball.selected=true;
     selectBallDisplay(ball);
@@ -399,12 +416,12 @@ function init() {
   var board=document.getElementById("board");
   board.addEventListener('mousedown', mouseDown, false);
   board.addEventListener('mouseup', mouseUp, false);
-  
+
   newGame();
 }
 
 function newGame() {
-  points=0;  
+  points=0;
   createBoard();
   updatePointsDisplay();
   drawBoard();
@@ -420,7 +437,7 @@ function newGame() {
     <button onclick="newGame();return false;">New Game</button><br/><br/>
   </div>
   <div id="debug"></div>
-</div> 
+</div>
 <script>
 init();
 </script>
