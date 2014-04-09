@@ -490,6 +490,8 @@ function touchMove(ev) {
   if (scrolling || startCoor==null || cellMoving==null) {
     return;
   }
+  ev.preventDefault();
+  
   currCoor=getCoordinates(ev);
   cellMoving.style.left=(currCoor.x-startCoor.x)+"px";
   cellMoving.style.top=(currCoor.y-startCoor.y)+"px";
