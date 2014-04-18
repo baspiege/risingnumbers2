@@ -22,7 +22,7 @@
   to {width: 0px; height:0; line-height: 0;}
 }
 
-.unselect {
+.unselectAnimation {
   background-color:#0000ff;
   -webkit-animation:unselectBackground 1s;
   animation:unselectBackground 1s;
@@ -63,7 +63,12 @@
 }
 
 .column {
- float: left;
+  float: left;
+}
+
+.goal {
+  float: left;
+  background-color:#ff0000;
 }
 
 </style>
@@ -74,12 +79,10 @@
 /*
 TODO
 
-when shifting down... add new balls...
-
-Make board, determine win...
-swipe randomly 2 to board size randomly...  add number to goal... shift board down
-goals at the bottom
-repeat till 0... put number back...
+Make board, determine win
+* Swipe randomly 2 to board size randomly...  add number to goal... shift board down
+* Goals at the bottom
+* Repeat till 0... put number back...
 
 Ideas
 * Start at 11. Need 11 11 times. Then 12 twelve times.
@@ -108,6 +111,8 @@ var COL_WIDTH=45;
 
 var points=0;
 var board=new Array();
+
+var goals=new Array();
 
 var mouseSelecting=false;
 
@@ -143,19 +148,29 @@ function removeChildrenFromElement(element) {
 // Board
 ///////////////////
 
+function checkGoal(count) {
+  for (var i=0;i<goals.length;i++) {
+    if(goals[i].number==count) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function checkSelection() {
-  var goal=12;
   var count=getSelectionCount();
 
-  if (count==goal) {
-    points+=goal;
+  var goalMade=checkGoal(count);
+  
+  if (goalMade) {
+    points+=count;
     updatePointsDisplay();
     removeBallAnimation();
-    setTimeout(removeSelectedFromBoard,1000);
-    fillInBoard();
+    removeSelectedFromBoard();
+    setTimeout(drawBoard,1000);
   }
 
-  if (count!=goal) {
+  if (!goalMade) {
     undoSelected();
   }
 }
@@ -172,6 +187,15 @@ function createBoard() {
       ball.x=i;
       ball.y=j;
     }
+  }
+}
+
+function createGoals() {
+  goals=new Array();
+  for (var i=0;i<10;i++) {
+    var ball=new Ball();
+    ball.number=createRandomExclusive(STARTING_BALL_MAX*3)+1;
+    goals.push(ball);
   }
 }
 
@@ -227,8 +251,7 @@ function removeSelectedFromBoard() {
     }
   }
   reindexBoard();
-  fillInBoard();
-  drawBoard();
+  //fillInBoard();
 }
 
 function undoSelected() {
@@ -251,6 +274,11 @@ function undoSelected() {
 function clearBoardDisplay() {
   var boardDisplay=document.getElementById("board");
   removeChildrenFromElement(boardDisplay);
+}
+
+function clearGoalsDisplay() {
+  var goalsDisplay=document.getElementById("goals");
+  removeChildrenFromElement(goalsDisplay);
 }
 
 function drawBall(ball) {
@@ -292,6 +320,22 @@ function drawBoard() {
     drawBalls();
 }
 
+function drawGoal(ball) {
+  var ballDisplay=document.createElement("div");
+  ballDisplay.setAttribute("id", "goal-" + ball.x + '-' + ball.y);
+  ballDisplay.setAttribute("class", "ball goal");
+  ballDisplay.appendChild(document.createTextNode(ball.number));
+  return ballDisplay;
+}
+
+function drawGoals() {
+  clearGoalsDisplay();
+  var goalDisplay=document.getElementById("goals");
+  for (var i=0;i<goals.length;i++) {
+    goalDisplay.appendChild(drawGoal(goals[i]));
+  }
+}
+
 function removeBallAnimation() {
   for (var i=0;i<board.length;i++) {
     var col=board[i];
@@ -312,7 +356,7 @@ function selectBallDisplay(ball) {
 
 function undoSelectedBallDisplay(ball) {
   var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-  ballDisplay.setAttribute("class", "ball unselect");
+  ballDisplay.setAttribute("class", "ball unselectAnimation");
 }
 
 function updatePointsDisplay() {
@@ -326,6 +370,10 @@ function debug(text) {
 ///////////////////
 // Mouse Interaction
 ///////////////////
+
+function preventDefault(e) {
+  e.preventDefault();
+}
 
 function mouseDown(e) {
   e.preventDefault();
@@ -416,6 +464,9 @@ function init() {
   var board=document.getElementById("board");
   board.addEventListener('mousedown', mouseDown, false);
   board.addEventListener('mouseup', mouseUp, false);
+  
+  var goals=document.getElementById("goals");
+  goals.addEventListener('mousedown', preventDefault, false);
 
   newGame();
 }
@@ -423,8 +474,11 @@ function init() {
 function newGame() {
   points=0;
   createBoard();
+  createGoals();
+  
   updatePointsDisplay();
   drawBoard();
+  drawGoals();
 }
 
 </script>
@@ -432,6 +486,8 @@ function newGame() {
   <div style="float:left">Points: <span id="points">100</span></div>
   <br/>
   <div style="float:left;" id="board" width="320" height="320">
+  </div>
+  <div style="float:left;" id="goals" width="320">
   </div>
   <div style="float:left;margin-top:30px;">
     <button onclick="newGame();return false;">New Game</button><br/><br/>
