@@ -8,7 +8,7 @@
 
 .removeAnimation {
   background-color:#0000ff;
-  -webkit-animation:reduceSizeToZero 1s;
+  -webkit-animation:reduceSizeToZero .5s;
   animation:reduceSizeToZero 1s;
 }
 
@@ -79,6 +79,9 @@
 /*
 TODO
 
+For selected...
+Verify either 1 left,right or 1 up,down...
+
 Make board, determine win
 * Swipe randomly 2 to board size randomly...  add number to goal... shift board down
 * Goals at the bottom
@@ -105,15 +108,16 @@ function Coordinates(x, y) {
 
 // Constants
 var BOARD_COL=7;
-var BOARD_ROW=8;
+var BOARD_ROW=7;
 var STARTING_BALL_MAX=10;
 var COL_WIDTH=45;
 
+// Game
 var points=0;
 var board=new Array();
-
 var goals=new Array();
 
+// Mouse
 var mouseSelecting=false;
 
 ///////////////////
@@ -159,7 +163,6 @@ function checkGoal(count) {
 
 function checkSelection() {
   var count=getSelectionCount();
-
   var goalMade=checkGoal(count);
   
   if (goalMade) {
@@ -169,8 +172,8 @@ function checkSelection() {
     removeSelectedFromBoard();
     removeGoalAnimation(count);
     removeGoal(count);
-    setTimeout(drawGoals,1000);
-    setTimeout(drawBoard,1000);
+    setTimeout(drawGoals,500);
+    setTimeout(drawBoard,500);
   }
 
   if (!goalMade) {
@@ -195,12 +198,20 @@ function createBoard() {
 
 function createGoals() {
   goals=new Array();
-  for (var i=0;i<10;i++) {
+  
+  var total=getBoardCount();
+  
+  // for (var i=0;i<10;i++) {
+  
+  var i=0;
+  while (total>0) {
     var ball=new Ball();
     ball.number=createRandomExclusive(STARTING_BALL_MAX*3)+1;
     goals.push(ball);
     ball.x=i;
     ball.y=0;
+    total=total-ball.number;
+    i=i+1;
   }
 }
 
@@ -217,6 +228,18 @@ function fillInBoard() {
       }
     }
   }
+}
+
+function getBoardCount() {
+  var count=0;
+  for (var i=0;i<board.length;i++) {
+    var col=board[i];
+    for (var j=0;j<col.length;j++) {
+      var ball=col[j];
+      count+=ball.number;
+    }
+  }
+  return count;
 }
 
 function getSelectionCount() {
