@@ -203,10 +203,16 @@ function createGoals() {
   
   // for (var i=0;i<10;i++) {
   
+  var max=STARTING_BALL_MAX*3;
+  
   var i=0;
   while (total>0) {
     var ball=new Ball();
-    ball.number=createRandomExclusive(STARTING_BALL_MAX*3)+1;
+    if (total>max) {
+      ball.number=createRandomExclusive(STARTING_BALL_MAX*3)+1;
+    } else {
+      ball.number=total;
+    }
     goals.push(ball);
     ball.x=i;
     ball.y=0;
