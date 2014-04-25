@@ -64,10 +64,11 @@
 
 .column {
   float: left;
+  display1: inline-block;
 }
 
 .goal {
-  float: left;
+  display: inline-block;
   background-color:#ff0000;
 }
 
@@ -79,16 +80,11 @@
 /*
 TODO
 
-For selected...
-Verify either 1 left,right or 1 up,down...
-
-Make board, determine win
-* Swipe randomly 2 to board size randomly...  add number to goal... shift board down
-* Goals at the bottom
-* Repeat till 0... put number back...
-
-Ideas
-* Start at 11. Need 11 11 times. Then 12 twelve times.
+* Make diagonal swipe easier
+* Verify selected touching
+* Make goal 10-30
+* Undo button
+* Compute col/ball width dynamically (from screen width)
 
 */
 
@@ -167,7 +163,7 @@ function checkSelection() {
   
   if (goalMade) {
     points+=count;
-    updatePointsDisplay();
+    //updatePointsDisplay();
     removeBallAnimation();
     removeSelectedFromBoard();
     removeGoalAnimation(count);
@@ -353,6 +349,7 @@ function drawBalls() {
     colDisplay.setAttribute("class", "column");
     colDisplay.style["width"] = colWidth;
     boardDisplay.appendChild(colDisplay);
+    //colDisplay.appendChild(document.createTextNode('\u00a0'));
     for (var j=0;j<col.length;j++) {
       colDisplay.appendChild(drawBall(col[j]));
     }
@@ -531,21 +528,22 @@ function newGame() {
   createBoard();
   createGoals();
   
-  updatePointsDisplay();
+  //updatePointsDisplay();
   drawBoard();
   drawGoals();
 }
 
 </script>
 <div style="width:320px">
-  <div style="float:left">Points: <span id="points">100</span></div>
-  <br/>
-  <div style="float:left;" id="board" width="320" height="320">
+<!--  <div style="float:left">Points: <span id="points">100</span></div> -->
+  <div id="board" width="320">
   </div>
-  <div style="float:left;" id="goals" width="320">
+  <div id="goals" width="320">
   </div>
-  <div style="float:left;margin-top:30px;width:100%">
-    <button onclick="newGame();return false;">New Game</button><br/><br/>
+  <div style="clear:both">
+  </div>
+  <div style="margin-top:30px;">
+    <button onclick="newGame();return false;">New Game</button>
   </div>
   <div id="debug"></div>
 </div>
