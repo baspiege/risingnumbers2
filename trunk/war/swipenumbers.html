@@ -63,6 +63,7 @@
 }
 
 .column {
+  vertical-align: top;
   display: inline-block;
 }
 
@@ -79,8 +80,6 @@
 /*
 TODO
 
-* Verify selected touching
-* Make goal 10-30
 * Undo button
 * Compute col/ball width dynamically (from screen width)
 
@@ -102,7 +101,7 @@ function Coordinates(x, y) {
 
 // Constants
 var BOARD_COL=7;
-var BOARD_ROW=3;
+var BOARD_ROW=7;
 var STARTING_BALL_MAX=10;
 var COL_WIDTH=45;
 
@@ -193,18 +192,14 @@ function createBoard() {
 
 function createGoals() {
   goals=new Array();
-  
   var total=getBoardCount();
-  
-  // for (var i=0;i<10;i++) {
-  
   var max=STARTING_BALL_MAX*3;
-  
+
   var i=0;
   while (total>0) {
     var ball=new Ball();
     if (total>max) {
-      ball.number=createRandomExclusive(STARTING_BALL_MAX*3)+1;
+      ball.number=createRandomExclusive(STARTING_BALL_MAX*2)+STARTING_BALL_MAX;
     } else {
       ball.number=total;
     }
