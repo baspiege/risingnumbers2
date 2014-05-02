@@ -63,8 +63,7 @@
 }
 
 .column {
-  float: left;
-  display1: inline-block;
+  display: inline-block;
 }
 
 .goal {
@@ -80,7 +79,6 @@
 /*
 TODO
 
-* Make diagonal swipe easier
 * Verify selected touching
 * Make goal 10-30
 * Undo button
@@ -104,7 +102,7 @@ function Coordinates(x, y) {
 
 // Constants
 var BOARD_COL=7;
-var BOARD_ROW=7;
+var BOARD_ROW=3;
 var STARTING_BALL_MAX=10;
 var COL_WIDTH=45;
 
@@ -112,6 +110,7 @@ var COL_WIDTH=45;
 var points=0;
 var board=new Array();
 var goals=new Array();
+var lastSwiped=null;
 
 // Mouse
 var mouseSelecting=false;
@@ -258,6 +257,11 @@ function getSelectionCount() {
   return count;
 }
 
+function isValidNextSelection(prevBall, nextBall) {
+  return (Math.abs(prevBall.x-nextBall.x)==1 && Math.abs(prevBall.y-nextBall.y)==0)
+      || (Math.abs(prevBall.x-nextBall.x)==0 && Math.abs(prevBall.y-nextBall.y)==1);
+}
+
 function reindexBoard() {
   for (var i=0;i<board.length;i++) {
     var col=board[i];
@@ -290,6 +294,7 @@ function removeSelectedFromBoard() {
       }
     }
   }
+ 
   reindexBoard();
   //fillInBoard();
 }
@@ -347,6 +352,7 @@ function drawBalls() {
     var col=board[i];
     var colDisplay=document.createElement("div");
     colDisplay.setAttribute("class", "column");
+    colDisplay.setAttribute("id", "col-" + i);
     colDisplay.style["width"] = colWidth;
     boardDisplay.appendChild(colDisplay);
     //colDisplay.appendChild(document.createTextNode('\u00a0'));
@@ -430,6 +436,7 @@ function preventDefault(e) {
 function mouseDown(e) {
   e.preventDefault();
   mouseSelecting=true;
+  lastSelected=null;
 }
 
 function mouseMove(e) {
@@ -441,8 +448,13 @@ function mouseMove(e) {
   var ball=col[boardY];
 
   if (mouseSelecting && ball) {
+  
+    if (lastSelected && !isValidNextSelection(lastSelected, ball)) {
+      return;
+    }
     ball.selected=true;
     selectBallDisplay(ball);
+    lastSelected=ball;
   }
 }
 
@@ -450,6 +462,7 @@ function mouseUp(e) {
   e.preventDefault();
   mouseSelecting=false;
   checkSelection();
+  lastSelected=null;
 }
 
 ///////////////////
@@ -487,18 +500,25 @@ function touchMove(ev) {
 function touchSelection(ev) {
   var coor=getCoordinatesTouchEvent(ev);
   var ball=getBallFromCoordinates(coor);
+  
   if (ball) {
+    if (lastSelected && !isValidNextSelection(lastSelected, ball)) {
+      return;
+    }
     ball.selected=true;
+    lastSelected=ball;
     selectBallDisplay(ball);
   }
 }
 
 function touchStart(ev) {
+  lastSelected=null;
   touchSelection(ev);
 }
 
 function touchEnd(ev) {
   checkSelection();
+  lastSelected=null;
 }
 
 ///////////////////
