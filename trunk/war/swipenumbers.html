@@ -58,18 +58,17 @@
   background-color:#0000ff;
 }
 
-.removed {
-  background-color:#ff0000;
-}
-
 .column {
   vertical-align: top;
   display: inline-block;
 }
 
 .goal {
-  display: inline-block;
   background-color:#ff0000;
+}
+
+.filler {
+  background-color:#ffffff;
 }
 
 </style>
@@ -80,8 +79,12 @@
 /*
 TODO
 
-* Undo button
-* Compute col/ball width dynamically (from screen width)
+Goal starts out randomly.... every 2 seconds add another and current goals move up.
+if goal hit end... game over...
+if more than one goal on board same number... get both...
+
+So change board to bigger... Goals on board...
+Add filler...
 
 */
 
@@ -90,7 +93,8 @@ function Ball() {
   this.y=0;
   this.number=0;
   this.selected=false;
-  this.removed=false;
+  this.goal=false;
+  this.filler=false;
 }
 
 // Coordinates for touch movement
@@ -147,6 +151,9 @@ function removeChildrenFromElement(element) {
 ///////////////////
 
 function checkGoal(count) {
+
+// TODO - Spin through board to get goals.
+
   for (var i=0;i<goals.length;i++) {
     if(goals[i].number==count) {
       return true;
@@ -164,8 +171,8 @@ function checkSelection() {
     //updatePointsDisplay();
     removeBallAnimation();
     removeSelectedFromBoard();
-    removeGoalAnimation(count);
-    removeGoal(count);
+    //removeGoalAnimation(count);
+    //removeGoal(count);
     setTimeout(drawGoals,500);
     setTimeout(drawBoard,500);
   }
@@ -187,19 +194,29 @@ function createBoard() {
       ball.x=i;
       ball.y=j;
     }
+    
+    for (var j=BOARD_ROW;j<BOARD_ROW+3;j++) {
+      var ball=new Ball();
+      ball.number=0;
+      ball.filler=true;
+      col.push(ball);
+      ball.x=i;
+      ball.y=j;
+    }
   }
+  
 }
 
 function createGoals() {
   goals=new Array();
   var total=getBoardCount();
-  var max=STARTING_BALL_MAX*3;
+  var max=STARTING_BALL_MAX*2;
 
   var i=0;
   while (total>0) {
     var ball=new Ball();
     if (total>max) {
-      ball.number=createRandomExclusive(STARTING_BALL_MAX*2)+STARTING_BALL_MAX;
+      ball.number=createRandomExclusive(STARTING_BALL_MAX)+STARTING_BALL_MAX;
     } else {
       ball.number=total;
     }
@@ -268,6 +285,7 @@ function reindexBoard() {
   }
 }
 
+// TODO - Spin through board
 function removeGoal(goalNumber) {
   for (var i=0;i<goals.length;i++) {
     var goal=goals[i];
@@ -307,6 +325,22 @@ function undoSelected() {
   }
 }
 
+function updateGoals() {
+
+  var colIndex=createRandomExclusive(BOARD_COL);
+  
+  var col=board[colIndex];
+  
+  col.pop();
+  
+  var goal=new Ball();
+  goal.goal=true;
+  goal.number=createRandomExclusive(STARTING_BALL_MAX)+STARTING_BALL_MAX;
+  col.push(goal);
+  
+  drawBoard();
+}
+
 ///////////////////
 // Draw
 ///////////////////
@@ -327,10 +361,12 @@ function drawBall(ball) {
   ballDisplay.setAttribute("boardX", ball.x);
   ballDisplay.setAttribute("boardY", ball.y);
 
-  if (ball.removed) {
-    ballDisplay.setAttribute("class", "ball removed");
+  if (ball.filler) {
+    ballDisplay.setAttribute("class", "ball filler");
   } else if (ball.selected) {
     ballDisplay.setAttribute("class", "ball selected");
+  } else if (ball.goal) {
+    ballDisplay.setAttribute("class", "ball goal");
   } else {
     ballDisplay.setAttribute("class", "ball active");
   }
@@ -541,11 +577,13 @@ function init() {
 function newGame() {
   points=0;
   createBoard();
-  createGoals();
+  //createGoals();
   
   //updatePointsDisplay();
   drawBoard();
-  drawGoals();
+  //drawGoals();
+  
+  setInterval( updateGoals, 2000); 
 }
 
 </script>
