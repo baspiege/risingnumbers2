@@ -114,6 +114,7 @@ var points=0;
 var board=new Array();
 var goals=new Array();
 var lastSwiped=null;
+var goalMovement=null;
 
 // Mouse
 var mouseSelecting=false;
@@ -583,7 +584,11 @@ function newGame() {
   drawBoard();
   //drawGoals();
   
-  setInterval( updateGoals, 2000); 
+  if (goalMovement) {
+    clearInterval(goalMovement);
+  }
+  
+  goalMovement=setInterval(updateGoals,2000); 
 }
 
 </script>
