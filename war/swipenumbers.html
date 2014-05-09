@@ -327,19 +327,19 @@ function undoSelected() {
 }
 
 function updateGoals() {
-
   var colIndex=createRandomExclusive(BOARD_COL);
-  
   var col=board[colIndex];
+  var ball=col[col.length-1];
   
-  col.pop();
-  
-  var goal=new Ball();
-  goal.goal=true;
-  goal.number=createRandomExclusive(STARTING_BALL_MAX)+STARTING_BALL_MAX;
-  col.push(goal);
-  
-  drawBoard();
+  // Goal
+  ball.goal=true;
+  ball.number=createRandomExclusive(STARTING_BALL_MAX)+STARTING_BALL_MAX;
+
+  // Display
+  var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
+  ballDisplay.setAttribute("class", "ball goal");
+  removeChildrenFromElement(ballDisplay);
+  ballDisplay.appendChild(document.createTextNode(ball.number));
 }
 
 ///////////////////
@@ -479,7 +479,7 @@ function mouseMove(e) {
   var col=board[boardX];
   var ball=col[boardY];
 
-  if (mouseSelecting && ball) {
+  if (mouseSelecting && ball && !ball.goal && !ball.filler) {
   
     if (lastSelected && !isValidNextSelection(lastSelected, ball)) {
       return;
@@ -534,7 +534,7 @@ function touchSelection(ev) {
   var ball=getBallFromCoordinates(coor);
   
   if (ball) {
-    if (lastSelected && !isValidNextSelection(lastSelected, ball)) {
+    if (lastSelected && !ball.goal  && !ball.filler && !isValidNextSelection(lastSelected, ball)) {
       return;
     }
     ball.selected=true;
