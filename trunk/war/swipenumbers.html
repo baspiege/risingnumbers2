@@ -326,20 +326,44 @@ function undoSelected() {
   }
 }
 
-function updateGoals() {
+function createRandomGoal() {
+
+  // Find random column
   var colIndex=createRandomExclusive(BOARD_COL);
   var col=board[colIndex];
   var ball=col[col.length-1];
   
-  // Goal
+  // Change to goal
   ball.goal=true;
+  ball.filler=false;
   ball.number=createRandomExclusive(STARTING_BALL_MAX)+STARTING_BALL_MAX;
 
-  // Display
-  var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
-  ballDisplay.setAttribute("class", "ball goal");
-  removeChildrenFromElement(ballDisplay);
-  ballDisplay.appendChild(document.createTextNode(ball.number));
+  updateBallDisplay(ball);
+}
+
+function incrementGoals() {
+  for (var i=0;i<board.length;i++) {
+    var col=board[i];
+    for (var j=0;j<col.length;j++) {
+      var ball=col[j];
+      if (ball.goal) {
+        var prevBall=col[j-1];
+        prevBall.goal=true;
+        prevBall.filler=false;
+        prevBall.number+=ball.number;
+        ball.goal=false;
+        ball.filler=true;
+        
+        updateBallDisplay(ball);
+        updateBallDisplay(prevBall);
+      }
+    }
+  }
+}
+
+function updateGoals() {
+  incrementGoals();
+  createRandomGoal();
 }
 
 ///////////////////
@@ -449,6 +473,23 @@ function undoSelectedBallDisplay(ball) {
   ballDisplay.setAttribute("class", "ball unselectAnimation");
 }
 
+function updateBallDisplay(ball) {
+  var ballDisplay=document.getElementById("ball-" + ball.x + '-' + ball.y);
+  
+  if (ball.filler) {
+    ballDisplay.setAttribute("class", "ball filler");
+  } else if (ball.selected) {
+    ballDisplay.setAttribute("class", "ball selected");
+  } else if (ball.goal) {
+    ballDisplay.setAttribute("class", "ball goal");
+  } else {
+    ballDisplay.setAttribute("class", "ball active");
+  }
+
+  removeChildrenFromElement(ballDisplay);
+  ballDisplay.appendChild(document.createTextNode(ball.number));
+}
+
 function updatePointsDisplay() {
   document.getElementById("points").innerHTML=points;
 }
@@ -533,8 +574,8 @@ function touchSelection(ev) {
   var coor=getCoordinatesTouchEvent(ev);
   var ball=getBallFromCoordinates(coor);
   
-  if (ball) {
-    if (lastSelected && !ball.goal  && !ball.filler && !isValidNextSelection(lastSelected, ball)) {
+  if (ball && !ball.goal && !ball.filler) {
+    if (lastSelected && !isValidNextSelection(lastSelected, ball)) {
       return;
     }
     ball.selected=true;
