@@ -347,12 +347,19 @@ function incrementGoals() {
     for (var j=0;j<col.length;j++) {
       var ball=col[j];
       if (ball.goal) {
+      
+        if (j-1<0) {
+          endGame();
+          return;
+        }
+      
         var prevBall=col[j-1];
         prevBall.goal=true;
         prevBall.filler=false;
         prevBall.number+=ball.number;
         ball.goal=false;
         ball.filler=true;
+        ball.number=0;
         
         updateBallDisplay(ball);
         updateBallDisplay(prevBall);
@@ -598,6 +605,15 @@ function touchEnd(ev) {
 // Set-up
 ///////////////////
 
+function endGame() {
+ 
+  if (goalMovement) {
+    clearInterval(goalMovement);
+  }
+  
+  alert("Game over!");
+}
+
 function init() {
 
   // Touch
@@ -629,7 +645,7 @@ function newGame() {
     clearInterval(goalMovement);
   }
   
-  goalMovement=setInterval(updateGoals,2000); 
+  goalMovement=setInterval(updateGoals,3000); 
 }
 
 </script>
