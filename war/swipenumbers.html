@@ -79,12 +79,7 @@
 /*
 TODO
 
-Goal starts out randomly.... every 2 seconds add another and current goals move up.
-if goal hit end... game over...
-if more than one goal on board same number... get both...
-
-So change board to bigger... Goals on board...
-Add filler...
+If more than one goal on board same number, get both.
 
 */
 
@@ -152,12 +147,13 @@ function removeChildrenFromElement(element) {
 ///////////////////
 
 function checkGoal(count) {
-
-// TODO - Spin through board to get goals.
-
-  for (var i=0;i<goals.length;i++) {
-    if(goals[i].number==count) {
-      return true;
+  for (var i=0;i<board.length;i++) {
+    var col=board[i];
+    for (var j=0;j<col.length;j++) {
+      var ball=col[j];
+      if (ball.goal && ball.number==count) {
+        return true;
+      }
     }
   }
   return false;
@@ -173,8 +169,8 @@ function checkSelection() {
     removeBallAnimation();
     removeSelectedFromBoard();
     //removeGoalAnimation(count);
-    //removeGoal(count);
-    setTimeout(drawGoals,500);
+    removeGoal(count);
+    //setTimeout(drawGoals,500);
     setTimeout(drawBoard,500);
   }
 
@@ -286,13 +282,19 @@ function reindexBoard() {
   }
 }
 
-// TODO - Spin through board
 function removeGoal(goalNumber) {
-  for (var i=0;i<goals.length;i++) {
-    var goal=goals[i];
-    if (goal.number==goalNumber) {
-      goals.splice(i,1);
-      break;
+  for (var i=0;i<board.length;i++) {
+    var col=board[i];
+    for (var j=0;j<col.length;j++) {
+      var ball=col[j];
+      if (ball.number==goalNumber) {
+        col.splice(j,1);
+        //ball.number=createRandomExclusive(STARTING_BALL_MAX)+1;
+        
+        //var newBall=new Ball();
+        //newBall.number=createRandomExclusive(STARTING_BALL_MAX)+1;
+        //col.splice(newBall, BOARD_COL);
+      }
     }
   }
 }
@@ -302,15 +304,21 @@ function removeSelectedFromBoard() {
     var col=board[i];
     for (var j=col.length-1;j>-1;j--) {
       var ball=col[j];
-      if (ball.selected) {
+      if (ball.selected && !ball.filler) {
         ball.selected=false;
         col.splice(j,1);
+        //ball.filler=true;
+        //ball.number=0;
+        
+        //var newBall=new Ball();
+        //newBall.number=createRandomExclusive(STARTING_BALL_MAX)+1;
+        //col.splice(newBall, BOARD_COL);
       }
     }
   }
  
   reindexBoard();
-  //fillInBoard();
+  fillInBoard();
 }
 
 function undoSelected() {
@@ -348,6 +356,7 @@ function incrementGoals() {
       var ball=col[j];
       if (ball.goal) {
       
+        // If at top
         if (j-1<0) {
           endGame();
           return;
