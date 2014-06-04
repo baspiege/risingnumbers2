@@ -79,7 +79,13 @@
 /*
 TODO
 
-If more than one goal on board same number, get both.
+If select doesn't match... Drop down to goals.
+
+Goal hits top of goals area.  Once all goals in a column used... game over.
+
+Make numbers 5 high.  Goals 5 high.
+
+Animate goals moving up?
 
 */
 
@@ -100,7 +106,7 @@ function Coordinates(x, y) {
 
 // Constants
 var BOARD_COL=7;
-var BOARD_ROW=7;
+var BOARD_ROW=5;
 var STARTING_BALL_MAX=10;
 var COL_WIDTH=45;
 
@@ -192,7 +198,7 @@ function createBoard() {
       ball.y=j;
     }
     
-    for (var j=BOARD_ROW;j<BOARD_ROW+3;j++) {
+    for (var j=BOARD_ROW;j<BOARD_ROW+5;j++) {
       var ball=new Ball();
       ball.number=0;
       ball.filler=true;
@@ -288,9 +294,13 @@ function removeGoal(goalNumber) {
     for (var j=0;j<col.length;j++) {
       var ball=col[j];
       if (ball.number==goalNumber) {
-        col.splice(j,1);
+      
+        ball.number=0;
+        ball.goal=false;
+        ball.filler=true;
+      
+        //col.splice(j,1);
         //ball.number=createRandomExclusive(STARTING_BALL_MAX)+1;
-        
         //var newBall=new Ball();
         //newBall.number=createRandomExclusive(STARTING_BALL_MAX)+1;
         //col.splice(newBall, BOARD_COL);
@@ -306,7 +316,9 @@ function removeSelectedFromBoard() {
       var ball=col[j];
       if (ball.selected && !ball.filler) {
         ball.selected=false;
-        col.splice(j,1);
+        ball.number=createRandomExclusive(STARTING_BALL_MAX)+1;
+        
+        //col.splice(j,1);
         //ball.filler=true;
         //ball.number=0;
         
